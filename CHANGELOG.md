@@ -23,6 +23,8 @@ Kiadott verzió még nincs. Az első tag (`v0.1.0`) csak akkor készül, ha a
 
 ### Módosítva
 
+- Felület: a téma színei a logó palettájából (navy, acélkék, a logó kék íve, borostyán) a korábbi
+  semleges palaszürke/türkiz helyett, hogy a felület ne üssön el a beágyazott logóktól.
 - Openness-integráció a V18 kézikönyv (12/2022) szerint: blokkcsoportok, SimaticML-korlátok,
   offline export, hibakódok (`TIA_PORTAL_TERMINATED`, `LICENSE_MISSING`, `PROJECT_OPEN_FAILED`). *TIA: all*
 - Könyvtárszerkezet a szabályzat szerint (`src/csharp`, `src/python`, `src/rust`, `src/tia-adapters`,

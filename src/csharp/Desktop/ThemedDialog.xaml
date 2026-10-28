@@ -5,7 +5,7 @@
         Width="520" SizeToContent="Height" MaxHeight="640" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <DockPanel>
-        <Border DockPanel.Dock="Bottom" Background="#C9CED3" BorderBrush="#B3BAC1" BorderThickness="0,1,0,0" Padding="14,10,8,4">
+        <Border DockPanel.Dock="Bottom" Background="#C3CCD9" BorderBrush="#A8B6CC" BorderThickness="0,1,0,0" Padding="14,10,8,4">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button x:Name="PrimaryButton" Style="{StaticResource AccentButton}" MinWidth="96" IsDefault="True" Click="OnPrimary" />
                 <Button x:Name="SecondaryButton" MinWidth="96" IsCancel="True" Click="OnSecondary" />
