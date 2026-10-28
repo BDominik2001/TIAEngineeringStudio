@@ -6,6 +6,7 @@
 param(
     [string]$Configuration = 'Release',
     [string]$Dist = (Join-Path $PSScriptRoot '..\dist\TiaEngineeringStudio'),
+    [string[]]$TiaVersions = @('V18', 'V19', 'V20'),
     [switch]$RequireOpenness
 )
 . "$PSScriptRoot\_common.ps1"
@@ -26,7 +27,7 @@ $tplTarget = Join-Path $Dist 'templates\scl'
 New-Item -ItemType Directory -Force $tplTarget | Out-Null
 Copy-Item (Join-Path $RepoRoot 'templates\scl\*') $tplTarget
 
-& "$PSScriptRoot\build-tia-workers.ps1" -Configuration $Configuration -OutputRoot (Join-Path $Dist 'workers') -RequireOpenness:$RequireOpenness
+& "$PSScriptRoot\build-tia-workers.ps1" -Configuration $Configuration -Versions $TiaVersions -OutputRoot (Join-Path $Dist 'workers') -RequireOpenness:$RequireOpenness
 
 Write-Step 'Buildazonosító (build-info.json, docs/VERSIONING.md)'
 $buildInfo = Join-Path $RepoRoot 'scripts\tools\build_info.py'

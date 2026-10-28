@@ -1,0 +1,10 @@
+# Titokkeresés (CI A szint): a gitleaks alapszabályai + szűk, indokolt kivételek.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Nyilvános azonosítók, nem titkok"
+regexes = [
+  # A Siemens.Engineering assembly nyilvános kulcstokenje (publicKeyToken) – közzétett azonosító.
+  '''d29ec89bac048f84''',
+]

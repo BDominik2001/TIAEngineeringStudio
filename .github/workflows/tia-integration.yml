@@ -1,0 +1,72 @@
+name: tia-integration
+
+# CI B szint (szabályzat 9. pont): valódi TIA Portal V18/V19/V20 integrációs teszt ellenőrzött,
+# elkülönített Windows self-hosted runneren. Csak kézzel indítható (Pull Request soha nem éri el
+# a licencelt TIA-gépet), és a "tia-integration" environment jóváhagyását kéri.
+#
+# Beállítás (docs/RELEASE_PROCESS.md):
+# - runner-címkék: self-hosted, windows, x64, tia-V18 | tia-V19 | tia-V20
+# - repository variable: TES_TIA_KNOWN_GOOD_PROJECT_V18|V19|V20 = ismert jó, üres PLC-t tartalmazó
+#   demó/sandbox projekt (.ap18/.ap19/.ap20); az eredeti soha nem módosul, a teszt sandbox-másolaton fut
+# - a CI nem tölt le PLC-re, nem kapcsolódik online, nem módosít éles gépprojektet.
+# Az eredmény verziónként külön artifact; a "Skipped"/"not run" soha nem számít "Passed"-nek.
+on:
+  workflow_dispatch:
+    inputs:
+      tia:
+        description: "TIA Portal verzió"
+        type: choice
+        options: [all, V18, V19, V20]
+        default: all
+      ref:
+        description: "Tesztelendő branch, tag vagy commit"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    strategy:
+      fail-fast: false
+      matrix:
+        tia: ${{ inputs.tia == 'all' && fromJSON('["V18","V19","V20"]') || fromJSON(format('["{0}"]', inputs.tia)) }}
+    runs-on: [self-hosted, windows, x64, "tia-${{ matrix.tia }}"]
+    environment: tia-integration
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - name: Known-good sandbox project configured
+        shell: pwsh
+        env:
+          KNOWN_GOOD: ${{ vars[format('TES_TIA_KNOWN_GOOD_PROJECT_{0}', matrix.tia)] }}
+        run: |
+          if (-not $env:KNOWN_GOOD) { throw 'TES_TIA_KNOWN_GOOD_PROJECT_${{ matrix.tia }} repository variable is not set: result is "Not tested".' }
+      - name: Build (worker linked against the installed Openness)
+        shell: pwsh
+        run: ./scripts/build-desktop.ps1 -TiaVersions ${{ matrix.tia }} -RequireOpenness -Dist "$env:RUNNER_TEMP\tes-${{ matrix.tia }}"
+      - name: Integration test (sandbox copy, offline compile)
+        shell: pwsh
+        env:
+          KNOWN_GOOD: ${{ vars[format('TES_TIA_KNOWN_GOOD_PROJECT_{0}', matrix.tia)] }}
+        run: ./scripts/test-tia-integration.ps1 -Version ${{ matrix.tia }} -KnownGoodProject $env:KNOWN_GOOD -WorkersDir "$env:RUNNER_TEMP\tes-${{ matrix.tia }}\workers"
+      - name: Result summary
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          Copy-Item "$env:RUNNER_TEMP\tes-${{ matrix.tia }}\build-info.json" artifacts\build-info-${{ matrix.tia }}.json -ErrorAction SilentlyContinue
+          $result = if ('${{ job.status }}' -eq 'success') { 'Passed' } else { 'Failed / not completed' }
+          "### TIA Portal ${{ matrix.tia }}: $result`n`nCommit: ``$(git rev-parse HEAD)``  ·  Record it in docs/COMPATIBILITY.md." | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tia-integration-${{ matrix.tia }}
+          path: artifacts/
+          if-no-files-found: warn
+      - name: Clean up the test environment
+        if: always()
+        shell: pwsh
+        run: Remove-Item -Recurse -Force "$env:RUNNER_TEMP\tes-${{ matrix.tia }}" -ErrorAction SilentlyContinue

@@ -16,6 +16,7 @@ A külön nyilvántartott verziókat a forrásukból olvassa (nincs kézzel más
 
 --check: csak ellenőrzi, hogy az appVersion a Python-generátorban és a Rust crate-ben is azonos.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -51,8 +52,12 @@ def app_version() -> str:
 def component_versions() -> dict[str, str]:
     return {
         "Directory.Build.props": app_version(),
-        "src/python/generator/__init__.py": _match(r'__version__ = "([^"]+)"', _read("src/python/generator/__init__.py"), "__version__"),
-        "src/rust/validator/Cargo.toml": _match(r'(?m)^version = "([^"]+)"', _read("src/rust/validator/Cargo.toml"), "crate version"),
+        "src/python/generator/__init__.py": _match(
+            r'__version__ = "([^"]+)"', _read("src/python/generator/__init__.py"), "__version__"
+        ),
+        "src/rust/validator/Cargo.toml": _match(
+            r'(?m)^version = "([^"]+)"', _read("src/rust/validator/Cargo.toml"), "crate version"
+        ),
     }
 
 
@@ -60,9 +65,14 @@ def git_state() -> tuple[str | None, bool | None]:
     sha = os.environ.get("GITHUB_SHA")
     try:
         if not sha:
-            sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
-        dirty = bool(subprocess.run(["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT, check=True,
-                                    capture_output=True, text=True).stdout.strip())
+            sha = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True
+            ).stdout.strip()
+        dirty = bool(
+            subprocess.run(
+                ["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT, check=True, capture_output=True, text=True
+            ).stdout.strip()
+        )
         return sha, dirty
     except (OSError, subprocess.CalledProcessError):
         return sha, None
@@ -70,8 +80,11 @@ def git_state() -> tuple[str | None, bool | None]:
 
 def timestamp() -> str:
     epoch = os.environ.get("SOURCE_DATE_EPOCH")
-    moment = (datetime.datetime.fromtimestamp(int(epoch), tz=datetime.timezone.utc) if epoch
-              else datetime.datetime.now(tz=datetime.timezone.utc))
+    moment = (
+        datetime.datetime.fromtimestamp(int(epoch), tz=datetime.timezone.utc)
+        if epoch
+        else datetime.datetime.now(tz=datetime.timezone.utc)
+    )
     return moment.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
@@ -86,7 +99,9 @@ def template_catalog() -> dict[str, str]:
 def lockfile_hash() -> str:
     combined = hashlib.sha256()
     for relative in LOCKFILES:
-        combined.update(relative.encode("ascii") + b"\0" + hashlib.sha256((ROOT / relative).read_bytes()).hexdigest().encode("ascii") + b"\n")
+        combined.update(
+            relative.encode("ascii") + b"\0" + hashlib.sha256((ROOT / relative).read_bytes()).hexdigest().encode("ascii") + b"\n"
+        )
     return combined.hexdigest()
 
 
@@ -107,8 +122,14 @@ def build_info(tia: str | None) -> dict:
         "buildTimestampUtc": timestamp(),
         "targetTiaVersion": tia,
         "adapterVersion": adapter,
-        "schemaVersion": _match(r'"schema_version"\s*:\s*\{\s*"const"\s*:\s*"([^"]+)"', _read("contracts/machine-project.schema.json"), "schema_version const"),
-        "protocolVersion": _match(r'public const string Current = "([^"]+)";', _read("src/csharp/Ipc/WorkerProtocol.cs"), "ProtocolVersions.Current"),
+        "schemaVersion": _match(
+            r'"schema_version"\s*:\s*\{\s*"const"\s*:\s*"([^"]+)"',
+            _read("contracts/machine-project.schema.json"),
+            "schema_version const",
+        ),
+        "protocolVersion": _match(
+            r'public const string Current = "([^"]+)";', _read("src/csharp/Ipc/WorkerProtocol.cs"), "ProtocolVersions.Current"
+        ),
         "templateCatalogVersion": f"{template['id']}@{template['version']}",
         "templateCatalogSha256": template["sha256"],
         "dependencyLockfileHash": lockfile_hash(),

@@ -1,7 +1,8 @@
 name: ci
 
-# TIA nélküli ellenőrzések. Valódi TIA Portal V18/V19/V20 integrációs teszt csak
-# telepített TIA-val rendelkező gépen futtatható (scripts/test-tia-integration.ps1).
+# CI A szint (docs/BRANCHING.md, docs/RELEASE_PROCESS.md): minden push és Pull Request ellenőrzése,
+# TIA Portal nélkül. A valódi V18/V19/V20 integráció (B szint) külön, jóváhagyással futó workflow:
+# .github/workflows/tia-integration.yml. Ez a workflow soha nem fut self-hosted (TIA) runneren.
 on:
   push:
   pull_request:
@@ -9,7 +10,50 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  checks:
+    name: lint, format, schema, determinism, security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # a titokkeresés a teljes előzményt vizsgálja
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tools
+        run: |
+          pip install ruff==0.16.9 check-jsonschema==0.39.0
+          rustup component add rustfmt
+      - name: Version consistency (C#, Python, Rust)
+        run: python scripts/tools/build_info.py --check
+      - name: Python lint (ruff)
+        run: ruff check .
+      - name: Python format (ruff)
+        run: ruff format --check .
+      - name: Rust format
+        working-directory: src/rust/validator
+        run: cargo fmt --check
+      - name: JSON Schema validation
+        run: |
+          check-jsonschema --check-metaschema contracts/*.schema.json
+          check-jsonschema --schemafile contracts/machine-project.schema.json examples/*.json
+      - name: Generated SCL is deterministic
+        run: bash scripts/ci/check-scl-determinism.sh
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Rust dependency audit
+        working-directory: src/rust/validator
+        run: |
+          cargo install cargo-audit --locked --quiet
+          cargo audit
+
   linux:
     runs-on: ubuntu-latest
     steps:
@@ -22,8 +66,12 @@ jobs:
           dotnet-version: "8.0.x"
       - name: Rust toolchain
         run: rustup component add clippy
-      - name: Offline tests (Python, Rust, .NET portable)
+      - name: Offline tests (Python, Rust, .NET portable, contracts, golden SCL)
         run: bash scripts/test-offline.sh
+      - name: NuGet vulnerability check
+        run: |
+          dotnet list TIA-Engineering-Studio.Portable.slnf package --vulnerable --include-transitive | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then exit 1; fi
 
   windows:
     runs-on: windows-latest
