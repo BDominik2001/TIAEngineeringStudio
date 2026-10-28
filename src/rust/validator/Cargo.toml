@@ -1,0 +1,18 @@
+[package]
+name = "tes_validator"
+version = "0.1.0"
+edition = "2021"
+description = "TIA Engineering Studio - deterministic machine model validator (C ABI)"
+license = "Proprietary"
+publish = false
+
+[lib]
+name = "tes_validator"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde_json = "1"
+
+[profile.release]
+# The FFI boundary catches panics with catch_unwind, which requires unwinding.
+panic = "unwind"

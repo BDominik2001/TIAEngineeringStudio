@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tia-engineering-studio.local/contracts/tia-command/1.1",
+  "title": "TIA worker parancs (protocol_version 1.1; 1.0 is elfogadott)",
+  "description": "A főalkalmazás UTF-8 JSON fájlban adja át: TiaStudio.TiaAdapter.V1x.exe --command <path> --result <path>. Siemens-típus nem szerepelhet benne. Letöltés/online/force művelet a protokollban nem létezik.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "job_id",
+    "operation",
+    "tia_version"
+  ],
+  "properties": {
+    "protocol_version": {
+      "enum": [
+        "1.0",
+        "1.1"
+      ]
+    },
+    "job_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "operation": {
+      "enum": [
+        "GetCapabilities",
+        "ValidateJob",
+        "ImportAndCompile",
+        "UpgradeProject",
+        "ListBlocks",
+        "ExportBlocks"
+      ],
+      "description": "UpgradeProject az MVP-ben mindig Unsupported. ListBlocks és ExportBlocks csak olvasó (1.1): a projektet nem módosítják és nem mentik."
+    },
+    "tia_version": {
+      "enum": [
+        "V18",
+        "V19",
+        "V20"
+      ]
+    },
+    "project_path": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Abszolút útvonal; kiterjesztése egyezzen a tia_version-nel (.ap18/.ap19/.ap20)."
+    },
+    "sandbox_root": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "A project_path ennek a mappának a leszármazottja kell legyen, és a projektmappában .tes-sandbox.json marker szükséges."
+    },
+    "plc_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sources_directory": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "A generált csomag gyökere (manifest.json szülőmappája)."
+    },
+    "manifest_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "dry_run": {
+      "type": "boolean",
+      "default": true
+    },
+    "overwrite_policy": {
+      "enum": [
+        "Deny"
+      ],
+      "description": "Az MVP-ben csak Deny: bármely névütközés BLOCK_COLLISION."
+    },
+    "approved_by_user": {
+      "type": "boolean",
+      "default": false,
+      "description": "Önmagában NEM jogosultság; csak érvényes approval objektummal együtt számít."
+    },
+    "approval": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "approved_by",
+        "approved_at_utc",
+        "approval_digest"
+      ],
+      "properties": {
+        "approved_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "approved_at_utc": {
+          "type": "string"
+        },
+        "approval_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "ApprovalDigest v1 (docs/API_CONTRACTS.md): SHA-256 a job_id, művelet, verzió, projektútvonal, PLC, felülírási szabály, manifest-hash és minden forrás-hash kanonikus szövegén."
+        }
+      }
+    },
+    "export_directory": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ExportBlocks: létező, üres, abszolút mappa; ide kerülnek a <blokk>.scl|.db|.udt|.xml fájlok."
+    },
+    "export_blocks": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "block_name",
+          "format"
+        ],
+        "properties": {
+          "block_name": {
+            "type": "string"
+          },
+          "format": {
+            "enum": [
+              "external_source",
+              "simaticml"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,71 @@
+FUNCTION_BLOCK "FB_Cylinder"
+TITLE = Cylinder end-position diagnostics
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : TES
+FAMILY : TES
+VERSION : 1.0
+//Evaluates the two end-position sensors of a pneumatic cylinder.
+//Inputs are TRUE when the corresponding end position is reached.
+//Hazard note: Fault indicates a sensor, wiring or mechanical defect. The
+//calling sequence logic must not issue motion commands while Fault is TRUE.
+//This block writes no outputs and is not a safety function.
+   VAR_INPUT 
+      Retracted : Bool;   // Sensor: retracted end position reached
+      Extended : Bool;   // Sensor: extended end position reached
+      MonitorTime : Time := T#2S;   // Max. time without any end position (unit: IEC time)
+      Reset : Bool;   // Acknowledge latched faults (level, not edge)
+   END_VAR
+
+   VAR_OUTPUT 
+      IsRetracted : Bool;   // Only the retracted sensor is active
+      IsExtended : Bool;   // Only the extended sensor is active
+      InTransit : Bool;   // Neither end-position sensor is active
+      FaultBothEndPositions : Bool;   // Both sensors active at the same time (latched)
+      FaultTransitTimeout : Bool;   // No end position for longer than MonitorTime (latched)
+      Fault : Bool;   // Any latched fault
+      StatusCode : Word;   // 16#0000 end position, 16#0001 in transit, 16#8001 both sensors, 16#8002 timeout
+   END_VAR
+
+   VAR 
+      TransitTimer {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;   // Transit time monitoring
+   END_VAR
+
+
+BEGIN
+	REGION End positions
+	    #IsRetracted := #Retracted AND NOT #Extended;
+	    #IsExtended := #Extended AND NOT #Retracted;
+	    #InTransit := NOT #Retracted AND NOT #Extended;
+	END_REGION
+	
+	REGION Transit monitoring
+	    #TransitTimer(IN := #InTransit,
+	                  PT := #MonitorTime);
+	END_REGION
+	
+	REGION Latched diagnostics
+	    IF #Reset THEN
+	        #FaultBothEndPositions := FALSE;
+	        #FaultTransitTimeout := FALSE;
+	    END_IF;
+	    IF #Retracted AND #Extended THEN
+	        #FaultBothEndPositions := TRUE;
+	    END_IF;
+	    IF #TransitTimer.Q THEN
+	        #FaultTransitTimeout := TRUE;
+	    END_IF;
+	    #Fault := #FaultBothEndPositions OR #FaultTransitTimeout;
+	END_REGION
+	
+	REGION Status code
+	    IF #FaultBothEndPositions THEN
+	        #StatusCode := 16#8001;
+	    ELSIF #FaultTransitTimeout THEN
+	        #StatusCode := 16#8002;
+	    ELSIF #InTransit THEN
+	        #StatusCode := 16#0001;
+	    ELSE
+	        #StatusCode := 16#0000;
+	    END_IF;
+	END_REGION
+END_FUNCTION_BLOCK

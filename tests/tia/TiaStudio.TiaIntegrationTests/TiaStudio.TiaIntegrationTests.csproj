@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Valódi TIA Portal Openness integrációs tesztek (CI B szint, .github/workflows/tia-integration.yml).
+    Csak TES_TIA_INTEGRATION=V18|V19|V20 és a scripts/test-tia-integration.ps1 által beállított
+    környezetben futnak; egyébként Skip (soha nem csendes siker). Csak sandbox/demó projekttel.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">net48;net8.0</TargetFrameworks>
+    <PlatformTarget Condition="'$(OS)' == 'Windows_NT'">x64</PlatformTarget>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>TiaStudio.TiaIntegrationTests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\csharp\Infrastructure\TiaStudio.Infrastructure.csproj" />
+    <Compile Include="..\..\integration\TiaStudio.IntegrationTests\TestEnvironment.cs" Link="TestEnvironment.cs" />
+  </ItemGroup>
+</Project>

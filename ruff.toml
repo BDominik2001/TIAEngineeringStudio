@@ -1,0 +1,12 @@
+# Python lint- és formázási szabályok (CI A szint, docs/CONTRIBUTING.md)
+line-length = 130
+target-version = "py39"
+src = ["src/python", "tests/unit/python"]
+include = ["src/python/**/*.py", "tests/unit/python/**/*.py", "scripts/**/*.py"]
+
+[lint]
+# pycodestyle, pyflakes, import-sorrend, bugbear
+select = ["E", "W", "F", "I", "B"]
+
+[lint.isort]
+known-first-party = ["generator", "_support"]

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    TIA Portal V18 worker (net48, x64), saját V18 Siemens.Engineering.dll referenciával.
+    MVP: a közös V18 API-szintű funkciókészletet használja (OpennessShared); V18-specifikus
+    API csak ebben a projektben vezethető be, capability flag mögött.
+    Nem hivatkozhat a WPF projektre.
+  -->
+  <PropertyGroup>
+    <TiaVersion>V18</TiaVersion>
+    <TiaAssemblyVersion>18.0.0.0</TiaAssemblyVersion>
+    <TiaApiPath Condition="'$(TiaApiPath)' == ''">C:\Program Files\Siemens\Automation\Portal V18\PublicAPI\V18</TiaApiPath>
+  </PropertyGroup>
+  <Import Project="..\openness-shared\OpennessWorker.targets" />
+</Project>

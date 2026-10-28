@@ -1,0 +1,127 @@
+name: ci
+
+# CI A szint (docs/BRANCHING.md, docs/RELEASE_PROCESS.md): minden push és Pull Request ellenőrzése,
+# TIA Portal nélkül. A valódi V18/V19/V20 integráció (B szint) külön, jóváhagyással futó workflow:
+# .github/workflows/tia-integration.yml. Ez a workflow soha nem fut self-hosted (TIA) runneren.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: lint, format, schema, determinism, security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # a titokkeresés a teljes előzményt vizsgálja
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tools
+        run: |
+          pip install ruff==0.16.9 check-jsonschema==0.39.0
+          rustup component add rustfmt
+      - name: Version consistency (C#, Python, Rust)
+        run: python scripts/tools/build_info.py --check
+      - name: Python lint (ruff)
+        run: ruff check .
+      - name: Python format (ruff)
+        run: ruff format --check .
+      - name: Rust format
+        working-directory: src/rust/validator
+        run: cargo fmt --check
+      - name: JSON Schema validation
+        run: |
+          check-jsonschema --check-metaschema contracts/*.schema.json
+          check-jsonschema --schemafile contracts/machine-project.schema.json examples/*.json
+      - name: Generated SCL is deterministic
+        run: bash scripts/ci/check-scl-determinism.sh
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Rust dependency audit
+        working-directory: src/rust/validator
+        run: |
+          cargo install cargo-audit --locked --quiet
+          cargo audit
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Rust toolchain
+        run: rustup component add clippy
+      - name: Offline tests (Python, Rust, .NET portable, contracts, golden SCL)
+        run: bash scripts/test-offline.sh
+      - name: NuGet vulnerability check
+        run: |
+          dotnet list TIA-Engineering-Studio.Portable.slnf package --vulnerable --include-transitive | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then exit 1; fi
+
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write # csak a ui-screenshots ág frissítéséhez
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Rust toolchain
+        run: rustup component add clippy
+      - name: Offline tests (incl. WPF Desktop build, net48 + net8.0)
+        shell: pwsh
+        run: ./scripts/test-offline.ps1
+      - name: Release layout (workers unlinked – no TIA on the runner)
+        shell: pwsh
+        run: ./scripts/build-desktop.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TiaEngineeringStudio-unlinked
+          path: dist/TiaEngineeringStudio
+      - name: UI screenshots (splash + every section, demo machine model)
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path dist/TiaEngineeringStudio/TiaStudio.Desktop.exe
+          $out = Join-Path $PWD 'ui-screens'
+          $demo = Join-Path $PWD 'examples/machine-v18.json'
+          $p = Start-Process -FilePath $exe -ArgumentList @('--screenshot', $out, '--demo', $demo) -Wait -PassThru
+          Get-ChildItem $out | Format-Table Name, Length
+          if (Test-Path (Join-Path $out 'error.txt')) { Get-Content (Join-Path $out 'error.txt') }
+          if ($p.ExitCode -ne 0) { throw "screenshot mode exit code $($p.ExitCode)" }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-screenshots
+          path: ui-screens
+      - name: Publish screenshots to the ui-screenshots branch
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          cd ui-screens
+          git init -q -b ui-screenshots
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add .
+          git commit -qm "UI screenshots for ${GITHUB_SHA} (${GITHUB_REF_NAME})"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ui-screenshots

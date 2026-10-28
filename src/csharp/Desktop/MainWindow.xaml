@@ -1,0 +1,731 @@
+<Window x:Class="TiaStudio.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:TiaStudio.Desktop"
+        Style="{StaticResource PortalWindow}"
+        Title="TIA Engineering Studio" Icon="Assets/app.ico"
+        Width="1366" Height="840" MinWidth="1120" MinHeight="680"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style x:Key="PageTitle" TargetType="TextBlock" BasedOn="{StaticResource Text.SectionTitle}">
+            <Setter Property="FontSize" Value="17" />
+        </Style>
+        <Style x:Key="TileIcon" TargetType="Path">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="Stroke" Value="#4E5D6E" />
+            <Setter Property="StrokeThickness" Value="1.6" />
+            <Setter Property="StrokeLineJoin" Value="Round" />
+            <Setter Property="StrokeStartLineCap" Value="Round" />
+            <Setter Property="StrokeEndLineCap" Value="Round" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="TileTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#3F5064" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="TileDesc" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#2F3D4C" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="14,0" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="TileArrow" TargetType="Path">
+            <Setter Property="Data" Value="{StaticResource Icon.Arrow}" />
+            <Setter Property="Stroke" Value="#8E98A2" />
+            <Setter Property="StrokeThickness" Value="2" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+        </Style>
+        <Style x:Key="PageHeaderLine" TargetType="Border">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Background" Value="#8E98A2" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Setter Property="Margin" Value="12,0,0,6" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- Állapotsor -->
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.Header}" Padding="14,5,8,5">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Megszakítás" Command="{Binding CancelCommand}" Margin="8,0,0,0" MinHeight="24" Padding="10,2" />
+                <ProgressBar DockPanel.Dock="Right" Width="150" VerticalAlignment="Center" IsIndeterminate="{Binding IsBusy}" Margin="12,0,0,0" />
+                <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{StaticResource Brush.Teal}" Text="{Binding StateText}" Margin="0,0,14,0" />
+                <TextBlock VerticalAlignment="Center" Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource Brush.TextOnDark}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding StatusIsError}" Value="True">
+                                    <Setter Property="Foreground" Value="#FF9A8C" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </DockPanel>
+        </Border>
+
+        <!-- Munkafolyamat-sáv -->
+        <Border DockPanel.Dock="Top" Background="#2A3138" BorderBrush="#151A1E" BorderThickness="0,0,0,1" Padding="14,7">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Cél: " Foreground="{StaticResource Brush.TextOnDarkMuted}" />
+                    <TextBlock Text="{Binding EffectiveTiaVersion, StringFormat='TIA Portal {0}'}" Foreground="{StaticResource Brush.TextOnDark}" FontWeight="SemiBold" />
+                    <TextBlock Text="   PLC: " Foreground="{StaticResource Brush.TextOnDarkMuted}" />
+                    <TextBlock Text="{Binding EffectivePlcName}" Foreground="{StaticResource Brush.TextOnDark}" FontWeight="SemiBold" />
+                    <TextBlock Text="   Forrás: " Foreground="{StaticResource Brush.TextOnDarkMuted}" />
+                    <TextBlock Text="{Binding InputText}" Foreground="{StaticResource Brush.TextOnDark}" />
+                </StackPanel>
+                <TextBlock Text="MUNKAFOLYAMAT" Foreground="{StaticResource Brush.TextOnDarkMuted}" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,14,0" />
+                <ItemsControl ItemsSource="{Binding WorkflowSteps}" VerticalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Border x:Name="Chip" CornerRadius="10" Padding="10,2,10,3" Background="#353E47" BorderBrush="#4D5862" BorderThickness="1">
+                                    <TextBlock x:Name="ChipText" Text="{Binding Label}" Foreground="#8E9AA5" FontSize="11.5" />
+                                </Border>
+                                <Path x:Name="Chevron" Data="{StaticResource Icon.Chevron}" Stroke="#5E6873" StrokeThickness="1.5" Width="6" Height="10" Stretch="Uniform" Margin="6,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Status}" Value="Done">
+                                    <Setter TargetName="Chip" Property="Background" Value="#2D6F83" />
+                                    <Setter TargetName="Chip" Property="BorderBrush" Value="#3E9AB5" />
+                                    <Setter TargetName="ChipText" Property="Foreground" Value="#E8F4F8" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="Current">
+                                    <Setter TargetName="Chip" Property="Background" Value="{StaticResource Brush.Orange}" />
+                                    <Setter TargetName="Chip" Property="BorderBrush" Value="#FFC266" />
+                                    <Setter TargetName="ChipText" Property="Foreground" Value="#1E252B" />
+                                    <Setter TargetName="ChipText" Property="FontWeight" Value="SemiBold" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="Failed">
+                                    <Setter TargetName="Chip" Property="Background" Value="{StaticResource Brush.Danger}" />
+                                    <Setter TargetName="Chip" Property="BorderBrush" Value="#E26B5E" />
+                                    <Setter TargetName="ChipText" Property="Foreground" Value="White" />
+                                    <Setter TargetName="ChipText" Property="FontWeight" Value="SemiBold" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsLast}" Value="True">
+                                    <Setter TargetName="Chevron" Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="214" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Bal oldali portál-navigáció -->
+            <Border Grid.Column="0" Background="{StaticResource Brush.Nav}" BorderBrush="#2B3239" BorderThickness="0,0,1,0">
+                <DockPanel>
+                    <Border DockPanel.Dock="Bottom" Margin="12,8,10,12" Padding="10,8" CornerRadius="3" Background="#2E363E" BorderBrush="#57626C" BorderThickness="1">
+                        <DockPanel>
+                            <Path DockPanel.Dock="Left" Data="M12,3 L22,20 H2 Z M12,9.5 V14 M12,17 V17.2" Stroke="{StaticResource Brush.Orange}" StrokeThickness="1.6"
+                                  StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="16" Height="15" Stretch="Uniform" VerticalAlignment="Top" Margin="0,1,8,0" />
+                            <TextBlock FontFamily="Segoe UI" Foreground="{StaticResource Brush.TextOnDarkMuted}" FontSize="11" TextWrapping="Wrap"
+                                       Text="Csak offline sandboxba importál. Nincs letöltés, online kapcsolat, forcing vagy safety-módosítás." />
+                        </DockPanel>
+                    </Border>
+                    <ListBox Background="Transparent" BorderThickness="0" Padding="0,14,0,0" ItemContainerStyle="{StaticResource NavTile}"
+                             SelectedIndex="{Binding SelectedSection}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBoxItem Tag="{StaticResource Icon.Start}">Kezdőlap</ListBoxItem>
+                        <ListBoxItem Tag="{StaticResource Icon.Model}">Gépmodell</ListBoxItem>
+                        <ListBoxItem Tag="{StaticResource Icon.Validate}">Ellenőrzés &amp; generálás</ListBoxItem>
+                        <ListBoxItem Tag="{StaticResource Icon.Review}">Előnézet &amp; jóváhagyás</ListBoxItem>
+                        <ListBoxItem Tag="{StaticResource Icon.Tia}">TIA Portal</ListBoxItem>
+                        <ListBoxItem Tag="{StaticResource Icon.Library}">Blokk-könyvtárak</ListBoxItem>
+                        <ListBoxItem Tag="{StaticResource Icon.Log}">Napló</ListBoxItem>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <TabControl Grid.Column="1" Style="{StaticResource HeaderlessTabControl}" SelectedIndex="{Binding SelectedSection}">
+
+                <!-- 0. Kezdőlap -->
+                <TabItem>
+                    <DockPanel>
+                        <ContentControl DockPanel.Dock="Left" Style="{StaticResource ActionPanel}">
+                            <StackPanel>
+                                <TextBlock Text="PROJEKT" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Új gépmodell" Command="{Binding NewProjectCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Gépmodell megnyitása…" Command="{Binding OpenProjectCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Gépmodell mentése…" Command="{Binding SaveProjectCommand}" />
+                                <TextBlock Text="ESZKÖZÖK" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Blokk-könyvtárak" Command="{Binding NavigateCommand}" CommandParameter="5" />
+                                <Button Style="{StaticResource ActionLink}" Content="Telepített TIA-verziók" Command="{Binding NavigateCommand}" CommandParameter="4" />
+                                <Button Style="{StaticResource ActionLink}" Content="Műveleti napló" Command="{Binding NavigateCommand}" CommandParameter="6" />
+                            </StackPanel>
+                        </ContentControl>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="22,16,22,18">
+                                <DockPanel Margin="0,0,0,10">
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Text.Muted}" Margin="12,0,0,0" VerticalAlignment="Bottom" TextWrapping="NoWrap"
+                                               Text="{Binding Source={x:Static local:BuildVersion.DisplayText}, StringFormat='TIA Engineering Studio {0}'}"
+                                               ToolTip="Alkalmazásverzió és git-commit (független a TIA Portal célverziójától)" />
+                                    <TextBlock Text="Első lépések" Style="{StaticResource PageTitle}" />
+                                    <Border Style="{StaticResource PageHeaderLine}" />
+                                </DockPanel>
+                                <TextBlock Foreground="{StaticResource Brush.TextDark}" FontWeight="SemiBold" Margin="0,0,0,12" TextWrapping="Wrap">
+                                    <Run Text="Gépmodell: " /><Run Text="{Binding ProjectName, Mode=OneWay}" />
+                                    <Run Text="  ·  állapot: " /><Run Text="{Binding StateText, Mode=OneWay}" />
+                                    <Run Text="  ·  Válaszd ki a következő lépést:" FontWeight="Normal" />
+                                </TextBlock>
+                                <Border Background="#EEF0F2" BorderBrush="#B8BFC6" BorderThickness="1" Padding="10,10,10,4">
+                                    <Grid>
+                                        <!-- függőleges összekötő vonal, mint a TIA "First steps" ábrán -->
+                                        <Border Width="2" Background="#A3ACB5" HorizontalAlignment="Left" Margin="19,56,0,28" />
+                                        <StackPanel>
+                                            <Border Background="{StaticResource Brush.StartTile}" Width="250" Height="46" HorizontalAlignment="Left" Margin="0,0,0,12">
+                                                <DockPanel Margin="14,0">
+                                                    <Image DockPanel.Dock="Right" Source="{StaticResource Logo.Image}" Width="36" Height="36" RenderOptions.BitmapScalingMode="HighQuality" />
+                                                    <TextBlock Text="TIA Engineering Studio" Style="{StaticResource TileTitle}" />
+                                                </DockPanel>
+                                            </Border>
+
+                                            <Button Style="{StaticResource FlatButton}" Command="{Binding NavigateCommand}" CommandParameter="1" Margin="0,0,0,8">
+                                                <Grid Height="48">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="56" />
+                                                        <ColumnDefinition Width="250" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Path Style="{StaticResource TileArrow}" />
+                                                    <Border Grid.Column="1" Background="{StaticResource Brush.StartTile}">
+                                                        <DockPanel Margin="14,0">
+                                                            <Path DockPanel.Dock="Right" Data="{StaticResource Icon.Model}" Style="{StaticResource TileIcon}" />
+                                                            <TextBlock Text="Gépmodell" Style="{StaticResource TileTitle}" />
+                                                        </DockPanel>
+                                                    </Border>
+                                                    <Border Grid.Column="2" Background="#D2D6DD" Margin="2,0,0,0">
+                                                        <TextBlock Text="Munkahengerek és bemeneti címek megadása" Style="{StaticResource TileDesc}" />
+                                                    </Border>
+                                                </Grid>
+                                            </Button>
+                                            <Button Style="{StaticResource FlatButton}" Command="{Binding NavigateCommand}" CommandParameter="2" Margin="0,0,0,8">
+                                                <Grid Height="48">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="56" />
+                                                        <ColumnDefinition Width="250" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Path Style="{StaticResource TileArrow}" />
+                                                    <Border Grid.Column="1" Background="{StaticResource Brush.StartTile}">
+                                                        <DockPanel Margin="14,0">
+                                                            <Path DockPanel.Dock="Right" Data="{StaticResource Icon.Validate}" Style="{StaticResource TileIcon}" />
+                                                            <TextBlock Text="Ellenőrzés &amp; generálás" Style="{StaticResource TileTitle}" />
+                                                        </DockPanel>
+                                                    </Border>
+                                                    <Border Grid.Column="2" Background="#D2D6DD" Margin="2,0,0,0">
+                                                        <TextBlock Text="Validálás (C# + Rust) és SCL-forrás generálása" Style="{StaticResource TileDesc}" />
+                                                    </Border>
+                                                </Grid>
+                                            </Button>
+                                            <Button Style="{StaticResource FlatButton}" Command="{Binding NavigateCommand}" CommandParameter="3" Margin="0,0,0,8">
+                                                <Grid Height="48">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="56" />
+                                                        <ColumnDefinition Width="250" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Path Style="{StaticResource TileArrow}" />
+                                                    <Border Grid.Column="1" Background="{StaticResource Brush.StartTile}">
+                                                        <DockPanel Margin="14,0">
+                                                            <Path DockPanel.Dock="Right" Data="{StaticResource Icon.Review}" Style="{StaticResource TileIcon}" />
+                                                            <TextBlock Text="Előnézet &amp; jóváhagyás" Style="{StaticResource TileTitle}" />
+                                                        </DockPanel>
+                                                    </Border>
+                                                    <Border Grid.Column="2" Background="#D2D6DD" Margin="2,0,0,0">
+                                                        <TextBlock Text="Források átnézése, sandbox-másolat, jóváhagyás" Style="{StaticResource TileDesc}" />
+                                                    </Border>
+                                                </Grid>
+                                            </Button>
+                                            <Button Style="{StaticResource FlatButton}" Command="{Binding NavigateCommand}" CommandParameter="4" Margin="0,0,0,8">
+                                                <Grid Height="48">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="56" />
+                                                        <ColumnDefinition Width="250" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Path Style="{StaticResource TileArrow}" />
+                                                    <Border Grid.Column="1" Background="{StaticResource Brush.StartTile}">
+                                                        <DockPanel Margin="14,0">
+                                                            <Path DockPanel.Dock="Right" Data="{StaticResource Icon.Tia}" Style="{StaticResource TileIcon}" />
+                                                            <TextBlock Text="TIA Portal" Style="{StaticResource TileTitle}" />
+                                                        </DockPanel>
+                                                    </Border>
+                                                    <Border Grid.Column="2" Background="#D2D6DD" Margin="2,0,0,0">
+                                                        <TextBlock Text="Száraz futás, import és offline fordítás a sandboxban" Style="{StaticResource TileDesc}" />
+                                                    </Border>
+                                                </Grid>
+                                            </Button>
+                                            <Button Style="{StaticResource FlatButton}" Command="{Binding NavigateCommand}" CommandParameter="5" Margin="0,0,0,8">
+                                                <Grid Height="48">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="56" />
+                                                        <ColumnDefinition Width="250" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Path Style="{StaticResource TileArrow}" />
+                                                    <Border Grid.Column="1" Background="{StaticResource Brush.StartTile}">
+                                                        <DockPanel Margin="14,0">
+                                                            <Path DockPanel.Dock="Right" Data="{StaticResource Icon.Library}" Style="{StaticResource TileIcon}" />
+                                                            <TextBlock Text="Blokk-könyvtárak" Style="{StaticResource TileTitle}" />
+                                                        </DockPanel>
+                                                    </Border>
+                                                    <Border Grid.Column="2" Background="#D2D6DD" Margin="2,0,0,0">
+                                                        <TextBlock Text="Blokkok exportja a projektből és importja a könyvtárból" Style="{StaticResource TileDesc}" />
+                                                    </Border>
+                                                </Grid>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
+                </TabItem>
+
+                <!-- 1. Gépmodell -->
+                <TabItem>
+                    <DockPanel>
+                        <ContentControl DockPanel.Dock="Left" Style="{StaticResource ActionPanel}">
+                            <StackPanel>
+                                <TextBlock Text="GÉPMODELL" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Új gépmodell" Command="{Binding NewProjectCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Megnyitás…" Command="{Binding OpenProjectCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Mentés…" Command="{Binding SaveProjectCommand}" />
+                                <TextBlock Text="ESZKÖZÖK" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Munkahenger hozzáadása" Command="{Binding AddCylinderCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Kijelölt eszköz törlése" Command="{Binding RemoveDeviceCommand}" />
+                                <TextBlock Text="TOVÁBB" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Ellenőrzés &amp; generálás" Command="{Binding NavigateCommand}" CommandParameter="2" />
+                            </StackPanel>
+                        </ContentControl>
+                        <DockPanel Margin="22,16,22,18">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                                <TextBlock Text="Gépmodell" Style="{StaticResource PageTitle}" />
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding ProjectFilePath}" Style="{StaticResource Text.Muted}" Margin="12,0,0,0" VerticalAlignment="Bottom" TextWrapping="NoWrap" />
+                                <Border Style="{StaticResource PageHeaderLine}" />
+                            </DockPanel>
+                            <HeaderedContentControl DockPanel.Dock="Top" Style="{StaticResource Card}" Header="Projekt és célrendszer">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,10">
+                                        <TextBlock Text="Projektnév" Style="{StaticResource Text.Label}" />
+                                        <TextBox Text="{Binding ProjectName, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3" Margin="0,0,0,10">
+                                        <TextBlock Text="Leírás (ASCII)" Style="{StaticResource Text.Label}" />
+                                        <TextBox Text="{Binding ProjectDescription, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="0">
+                                        <TextBlock Text="TIA célverzió" Style="{StaticResource Text.Label}" />
+                                        <ComboBox ItemsSource="{Binding TiaVersionOptions}" SelectedItem="{Binding TiaVersion}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="2">
+                                        <TextBlock Text="PLC-név" Style="{StaticResource Text.Label}" />
+                                        <TextBox Text="{Binding PlcName, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="4">
+                                        <TextBlock Text="CPU-család" Style="{StaticResource Text.Label}" />
+                                        <ComboBox ItemsSource="{Binding CpuFamilyOptions}" SelectedItem="{Binding CpuFamily}" />
+                                    </StackPanel>
+                                </Grid>
+                            </HeaderedContentControl>
+                            <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Text.Muted}" Margin="0,8,0,0"
+                                       Text="Azonosító: CYL_01 forma · Cím: I&lt;bájt&gt;.&lt;bit&gt; (pl. I0.0) · Üres felügyeleti idő = 2000 ms · A célverzió csak exportcél: ugyanabból a modellből V18, V19 és V20 forrás is előállítható." />
+                            <HeaderedContentControl Style="{StaticResource Card}" Header="Eszközök és bemeneti címek" Margin="0">
+                                <DataGrid ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Azonosító" Width="120" Binding="{Binding Id, UpdateSourceTrigger=PropertyChanged}" />
+                                        <DataGridTextColumn Header="Fajta" Width="90" Binding="{Binding Kind, Mode=OneWay}" IsReadOnly="True" />
+                                        <DataGridTextColumn Header="Leírás (ASCII)" Width="*" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
+                                        <DataGridTextColumn Header="Hátsó végállás" Width="130" Binding="{Binding RetractedInput, UpdateSourceTrigger=PropertyChanged}" />
+                                        <DataGridTextColumn Header="Első végállás" Width="130" Binding="{Binding ExtendedInput, UpdateSourceTrigger=PropertyChanged}" />
+                                        <DataGridTextColumn Header="Felügyeleti idő [ms]" Width="150" Binding="{Binding MonitorTimeMs, TargetNullValue='', UpdateSourceTrigger=LostFocus}" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </HeaderedContentControl>
+                        </DockPanel>
+                    </DockPanel>
+                </TabItem>
+
+                <!-- 2. Ellenőrzés és generálás -->
+                <TabItem>
+                    <DockPanel>
+                        <ContentControl DockPanel.Dock="Left" Style="{StaticResource ActionPanel}">
+                            <StackPanel>
+                                <TextBlock Text="MUNKAFOLYAMAT" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="{Binding ValidateLabel}" Command="{Binding ValidateCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="{Binding CheckLabel}" Command="{Binding CheckCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="{Binding GenerateLabel}" Command="{Binding GenerateCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Újrakezdés (vázlat)" Command="{Binding ResetCommand}" />
+                                <TextBlock Text="TOVÁBB" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Előnézet &amp; jóváhagyás" Command="{Binding NavigateCommand}" CommandParameter="3" />
+                            </StackPanel>
+                        </ContentControl>
+                        <DockPanel Margin="22,16,22,18">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                                <TextBlock Text="Ellenőrzés &amp; generálás" Style="{StaticResource PageTitle}" />
+                                <Border Style="{StaticResource PageHeaderLine}" />
+                            </DockPanel>
+                            <Border DockPanel.Dock="Top" CornerRadius="3" Padding="12,9" Margin="0,0,0,12" BorderThickness="1">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="#E3EEF2" />
+                                        <Setter Property="BorderBrush" Value="#9CC7D4" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding StatusIsError}" Value="True">
+                                                <Setter Property="Background" Value="#F6E1DE" />
+                                                <Setter Property="BorderBrush" Value="#D99187" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Foreground="{StaticResource Brush.TextDark}" />
+                            </Border>
+                            <HeaderedContentControl Style="{StaticResource Card}" Header="Hibák, figyelmeztetések, részletek" Margin="0">
+                                <ListBox ItemsSource="{Binding Issues}" FontFamily="Consolas" BorderThickness="0" Background="Transparent" />
+                            </HeaderedContentControl>
+                        </DockPanel>
+                    </DockPanel>
+                </TabItem>
+
+                <!-- 3. Előnézet és jóváhagyás -->
+                <TabItem>
+                    <DockPanel>
+                        <ContentControl DockPanel.Dock="Left" Style="{StaticResource ActionPanel}">
+                            <StackPanel>
+                                <TextBlock Text="ÁTNÉZÉS" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Átnéztem a forrásokat" Command="{Binding MarkReviewedCommand}" ToolTip="Minden fájlt meg kell nyitni az előnézetben" />
+                                <TextBlock Text="SANDBOX" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Ismert jó projekt tallózása…" Command="{Binding BrowseKnownGoodProjectCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Sandbox-másolat készítése" Command="{Binding CreateSandboxCopyCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Meglévő sandbox tallózása…" Command="{Binding BrowseSandboxProjectCommand}" />
+                                <TextBlock Text="JÓVÁHAGYÁS" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Jóváhagyás" Command="{Binding ApproveCommand}" />
+                                <TextBlock Text="TOVÁBB" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="TIA Portal" Command="{Binding NavigateCommand}" CommandParameter="4" />
+                            </StackPanel>
+                        </ContentControl>
+                        <DockPanel Margin="22,16,22,18">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                                <TextBlock Text="Előnézet &amp; jóváhagyás" Style="{StaticResource PageTitle}" />
+                                <Border Style="{StaticResource PageHeaderLine}" />
+                            </DockPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="430" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <DockPanel Grid.Column="0">
+                                    <HeaderedContentControl DockPanel.Dock="Bottom" Style="{StaticResource Card}" Header="Sandbox-projekt" Margin="0">
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource Text.Muted}" Margin="0,0,0,8">
+                                                <Run Text="Sandbox gyökér: " /><Run Text="{Binding SandboxRoot, Mode=OneWay}" />
+                                            </TextBlock>
+                                            <TextBlock Text="Ismert jó forrásprojekt (nem módosul)" Style="{StaticResource Text.Label}" />
+                                            <TextBox Text="{Binding KnownGoodProjectPath}" Margin="0,0,0,8" />
+                                            <TextBlock Text="Kiválasztott sandbox (a célverzió kiterjesztésével)" Style="{StaticResource Text.Label}" />
+                                            <TextBox Text="{Binding SandboxProjectPath, Mode=OneWay}" IsReadOnly="True" Margin="0,0,0,10" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="Átnéztem" Command="{Binding MarkReviewedCommand}" />
+                                                <Button Content="Jóváhagyás" Style="{StaticResource AccentButton}" Command="{Binding ApproveCommand}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </HeaderedContentControl>
+                                    <HeaderedContentControl Style="{StaticResource Card}" Header="Generált fájlok (importálási sorrend)">
+                                        <ListView ItemsSource="{Binding GeneratedFiles}" SelectedItem="{Binding SelectedFile}" BorderThickness="0">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn Header="#" Width="34" DisplayMemberBinding="{Binding ImportOrder}" />
+                                                    <GridViewColumn Header="Blokk" Width="170" DisplayMemberBinding="{Binding BlockName}" />
+                                                    <GridViewColumn Header="Típus" Width="48" DisplayMemberBinding="{Binding BlockType}" />
+                                                    <GridViewColumn Header="Átnézve" Width="64">
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <Path x:Name="Check" Data="M1,5 L4.5,8.5 L11,1.5" Stroke="{StaticResource Brush.Success}" StrokeThickness="2" Visibility="Collapsed" />
+                                                                <DataTemplate.Triggers>
+                                                                    <DataTrigger Binding="{Binding Viewed}" Value="True">
+                                                                        <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </DataTemplate.Triggers>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                    <GridViewColumn Header="SHA-256" Width="90" DisplayMemberBinding="{Binding Sha256}" />
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </HeaderedContentControl>
+                                </DockPanel>
+                                <HeaderedContentControl Grid.Column="2" Style="{StaticResource Card}" Header="Forráskód (csak olvasható)" Margin="0">
+                                    <TextBox Style="{StaticResource CodeView}" Text="{Binding PreviewText, Mode=OneWay}" />
+                                </HeaderedContentControl>
+                            </Grid>
+                        </DockPanel>
+                    </DockPanel>
+                </TabItem>
+
+                <!-- 4. TIA Portal -->
+                <TabItem>
+                    <DockPanel>
+                        <ContentControl DockPanel.Dock="Left" Style="{StaticResource ActionPanel}">
+                            <StackPanel>
+                                <TextBlock Text="TELEPÍTÉS" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Verziók frissítése" Command="{Binding RefreshInstallationsCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Worker képességei" Command="{Binding QueryCapabilitiesCommand}" />
+                                <TextBlock Text="IMPORT" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Száraz futás (ütközésvizsgálat)" Command="{Binding DryRunCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Import + offline fordítás + mentés" Command="{Binding ImportCommand}" />
+                            </StackPanel>
+                        </ContentControl>
+                        <DockPanel Margin="22,16,22,18">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                                <TextBlock Text="TIA Portal" Style="{StaticResource PageTitle}" />
+                                <Border Style="{StaticResource PageHeaderLine}" />
+                            </DockPanel>
+                            <HeaderedContentControl DockPanel.Dock="Top" Style="{StaticResource Card}" Header="Telepített TIA Portal / Openness verziók (registry)">
+                                <DataGrid ItemsSource="{Binding Installations}" IsReadOnly="True" MaxHeight="150">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Verzió" Width="70" Binding="{Binding TiaVersion}" />
+                                        <DataGridTextColumn Header="Állapot" Width="110" Binding="{Binding Status}" />
+                                        <DataGridTextColumn Header="Assembly" Width="90" Binding="{Binding AssemblyVersion}" />
+                                        <DataGridTextColumn Header="Siemens.Engineering.dll" Width="300" Binding="{Binding EngineeringDllPath}" />
+                                        <DataGridTextColumn Header="Megjegyzés" Width="*" Binding="{Binding Notes[0]}" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </HeaderedContentControl>
+                            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button Content="Száraz futás" Command="{Binding DryRunCommand}" />
+                                <Button Content="Import + fordítás + mentés" Style="{StaticResource AccentButton}" Command="{Binding ImportCommand}" />
+                            </StackPanel>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <HeaderedContentControl Grid.Row="0" Grid.Column="0" Style="{StaticResource Card}" Header="Worker üzenetek">
+                                    <ListBox ItemsSource="{Binding WorkerMessages}" FontFamily="Consolas" BorderThickness="0" Background="Transparent" />
+                                </HeaderedContentControl>
+                                <HeaderedContentControl Grid.Row="0" Grid.Column="2" Style="{StaticResource Card}" Header="Importterv">
+                                    <DataGrid ItemsSource="{Binding ImportPlan}" IsReadOnly="True">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="#" Binding="{Binding ImportOrder}" />
+                                            <DataGridTextColumn Header="Blokk" Width="*" Binding="{Binding BlockName}" />
+                                            <DataGridTextColumn Header="Művelet" Binding="{Binding Action}" />
+                                            <DataGridTextColumn Header="Meglévő hely" Width="*" Binding="{Binding ExistingLocation}" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </HeaderedContentControl>
+                                <HeaderedContentControl Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Style="{StaticResource Card}" Header="Fordítási üzenetek (offline)" Margin="0">
+                                    <DataGrid ItemsSource="{Binding CompileMessages}" IsReadOnly="True">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Szint" Binding="{Binding Depth}" />
+                                            <DataGridTextColumn Header="Állapot" Binding="{Binding State}" />
+                                            <DataGridTextColumn Header="Hely" Width="250" Binding="{Binding Path}" />
+                                            <DataGridTextColumn Header="Leírás" Width="*" Binding="{Binding Description}" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </HeaderedContentControl>
+                            </Grid>
+                        </DockPanel>
+                    </DockPanel>
+                </TabItem>
+
+                <!-- 5. Blokk-könyvtárak -->
+                <TabItem DataContext="{Binding Library}">
+                    <DockPanel>
+                        <ContentControl DockPanel.Dock="Left" Style="{StaticResource ActionPanel}">
+                            <StackPanel>
+                                <TextBlock Text="KÖNYVTÁR" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Lista frissítése" Command="{Binding RefreshLibrariesCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Integritás-ellenőrzés" Command="{Binding VerifyLibraryCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Kijelölt elem törlése" Command="{Binding RemoveItemCommand}" />
+                                <TextBlock Text="IMPORT A PROJEKTBE" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Kipipáltak importjának előkészítése" Command="{Binding PrepareImportCommand}" />
+                                <TextBlock Text="EXPORT A KÖNYVTÁRBA" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Forrás sandbox tallózása…" Command="{Binding BrowseSourceProjectCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Blokkok listázása" Command="{Binding ListBlocksCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Kipipáltak exportja" Command="{Binding ExportCommand}" />
+                            </StackPanel>
+                        </ContentControl>
+                        <DockPanel Margin="22,16,22,18">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                                <TextBlock Text="Blokk-könyvtárak" Style="{StaticResource PageTitle}" />
+                                <TextBlock DockPanel.Dock="Right" Style="{StaticResource Text.Muted}" Margin="12,0,0,0" VerticalAlignment="Bottom" TextWrapping="NoWrap">
+                                    <Run Text="Hely: " /><Run Text="{Binding LibraryRoot, Mode=OneWay}" />
+                                </TextBlock>
+                                <Border Style="{StaticResource PageHeaderLine}" />
+                            </DockPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="290" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <DockPanel Grid.Column="0">
+                                    <HeaderedContentControl DockPanel.Dock="Top" Style="{StaticResource Card}" Header="Cél / forrás">
+                                        <StackPanel>
+                                            <TextBlock Text="TIA-verzió (export forrása, import célja)" Style="{StaticResource Text.Label}" />
+                                            <ComboBox ItemsSource="{Binding TiaVersionOptions}" SelectedItem="{Binding TiaVersion}" Margin="0,0,0,8" />
+                                            <TextBlock Text="PLC-név" Style="{StaticResource Text.Label}" />
+                                            <TextBox Text="{Binding PlcName, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </HeaderedContentControl>
+                                    <HeaderedContentControl DockPanel.Dock="Bottom" Style="{StaticResource Card}" Header="Új könyvtár" Margin="0">
+                                        <StackPanel>
+                                            <TextBlock Text="Név (A-Z, 0-9, _ -)" Style="{StaticResource Text.Label}" />
+                                            <TextBox Text="{Binding NewLibraryName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+                                            <TextBlock Text="Leírás" Style="{StaticResource Text.Label}" />
+                                            <TextBox Text="{Binding NewLibraryDescription, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
+                                            <Button Content="Könyvtár létrehozása" Style="{StaticResource AccentButton}" Command="{Binding CreateLibraryCommand}" HorizontalAlignment="Left" />
+                                        </StackPanel>
+                                    </HeaderedContentControl>
+                                    <HeaderedContentControl Style="{StaticResource Card}" Header="Könyvtárak">
+                                        <ListBox ItemsSource="{Binding Libraries}" SelectedItem="{Binding SelectedLibrary}" BorderThickness="0" Background="Transparent">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Margin="0,2">
+                                                        <TextBlock FontWeight="SemiBold">
+                                                            <Run Text="{Binding Name, Mode=OneWay}" /><Run Text="  (" /><Run Text="{Binding ItemCount, Mode=OneWay}" /><Run Text=" elem)" />
+                                                        </TextBlock>
+                                                        <TextBlock Text="{Binding Description}" Style="{StaticResource Text.Muted}" />
+                                                        <TextBlock Text="{Binding Problem}" Foreground="{StaticResource Brush.Danger}" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </HeaderedContentControl>
+                                </DockPanel>
+                                <Grid Grid.Column="2">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <HeaderedContentControl Grid.Row="0" Style="{StaticResource Card}" Header="Könyvtár elemei – import a projektbe">
+                                        <DockPanel>
+                                            <CheckBox DockPanel.Dock="Top" Content="Régi revíziók is" IsChecked="{Binding ShowAllRevisions}" Margin="0,0,0,8" />
+                                            <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}">
+                                                <DataGrid.Columns>
+                                                    <DataGridTemplateColumn Header="Import">
+                                                        <DataGridTemplateColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" />
+                                                            </DataTemplate>
+                                                        </DataGridTemplateColumn.CellTemplate>
+                                                    </DataGridTemplateColumn>
+                                                    <DataGridTextColumn Header="Blokk" Width="160" Binding="{Binding BlockName, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Típus" Binding="{Binding BlockType, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Rev." Binding="{Binding Revision, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Formátum" Binding="{Binding Format, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Forrás TIA" Binding="{Binding SourceTiaVersion, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Nyelv" Binding="{Binding Language, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Leírás" Width="*" Binding="{Binding Description, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Eredet" Binding="{Binding Origin, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Felvéve" Binding="{Binding Added, Mode=OneWay}" IsReadOnly="True" />
+                                                </DataGrid.Columns>
+                                            </DataGrid>
+                                        </DockPanel>
+                                    </HeaderedContentControl>
+                                    <HeaderedContentControl Grid.Row="1" Style="{StaticResource Card}" Header="Projekt blokkjai – export a kiválasztott könyvtárba (csak olvasás, sandboxból)" Margin="0">
+                                        <DockPanel>
+                                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                                <Button DockPanel.Dock="Right" Content="Blokkok listázása" Command="{Binding ListBlocksCommand}" Margin="6,0,0,0" />
+                                                <Button DockPanel.Dock="Right" Content="Tallózás…" Command="{Binding BrowseSourceProjectCommand}" Margin="6,0,0,0" />
+                                                <TextBox Text="{Binding SourceProjectPath, Mode=OneWay}" IsReadOnly="True" ToolTip="Forrás sandbox-projekt (a célverzió kiterjesztésével)" />
+                                            </DockPanel>
+                                            <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                                                <Button DockPanel.Dock="Right" Content="Kipipáltak exportja" Style="{StaticResource AccentButton}" Command="{Binding ExportCommand}" Margin="6,0,0,0" />
+                                                <TextBlock DockPanel.Dock="Left" Text="Leírás:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource Brush.TextMuted}" />
+                                                <TextBox Text="{Binding ExportDescription, UpdateSourceTrigger=PropertyChanged}" />
+                                            </DockPanel>
+                                            <DataGrid ItemsSource="{Binding ProjectBlocks}">
+                                                <DataGrid.Columns>
+                                                    <DataGridTemplateColumn Header="Export">
+                                                        <DataGridTemplateColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanExport}" HorizontalAlignment="Center" />
+                                                            </DataTemplate>
+                                                        </DataGridTemplateColumn.CellTemplate>
+                                                    </DataGridTemplateColumn>
+                                                    <DataGridTextColumn Header="Blokk" Width="160" Binding="{Binding Name, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Típus" Binding="{Binding BlockType, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Nyelv" Binding="{Binding Language, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTemplateColumn Header="Formátum" Width="140">
+                                                        <DataGridTemplateColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <ComboBox ItemsSource="{Binding Formats}" SelectedItem="{Binding SelectedFormat, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanExport}" MinHeight="24" />
+                                                            </DataTemplate>
+                                                        </DataGridTemplateColumn.CellTemplate>
+                                                    </DataGridTemplateColumn>
+                                                    <DataGridTextColumn Header="Hely" Width="180" Binding="{Binding Location, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Megjegyzés" Width="*" Binding="{Binding Note, Mode=OneWay}" IsReadOnly="True" />
+                                                </DataGrid.Columns>
+                                            </DataGrid>
+                                        </DockPanel>
+                                    </HeaderedContentControl>
+                                </Grid>
+                            </Grid>
+                        </DockPanel>
+                    </DockPanel>
+                </TabItem>
+
+                <!-- 6. Napló -->
+                <TabItem>
+                    <DockPanel>
+                        <ContentControl DockPanel.Dock="Left" Style="{StaticResource ActionPanel}">
+                            <StackPanel>
+                                <TextBlock Text="NAPLÓ" Style="{StaticResource ActionHeader}" />
+                                <TextBlock Foreground="{StaticResource Brush.TextOnDarkMuted}" TextWrapping="Wrap" Margin="10,0,6,0" FontSize="12"
+                                           Text="Minden állapotátmenet és könyvtárművelet visszakereshető JSONL-naplóba kerül (SHA-256 hivatkozásokkal). Jelszó, token vagy kulcs nem kerül a naplóba." />
+                            </StackPanel>
+                        </ContentControl>
+                        <DockPanel Margin="22,16,22,18">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                                <TextBlock Text="Műveleti napló" Style="{StaticResource PageTitle}" />
+                                <Border Style="{StaticResource PageHeaderLine}" />
+                            </DockPanel>
+                            <HeaderedContentControl Style="{StaticResource Card}" Header="Események (ebben a munkamenetben)" Margin="0">
+                                <ListBox ItemsSource="{Binding AuditLines}" FontFamily="Consolas" FontSize="11.5" BorderThickness="0" Background="Transparent" />
+                            </HeaderedContentControl>
+                        </DockPanel>
+                    </DockPanel>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</Window>

@@ -1,0 +1,12 @@
+{
+  "id": "tes-scl-core",
+  "version": "1.0.0",
+  "description": "Common SCL subset intended to compile on TIA Portal V18, V19 and V20 (S7-1200/S7-1500). Compile success must be proven per version by integration tests.",
+  "files": {
+    "DB_Cylinder.scl.tmpl": "31bf985fafd825aa26dbacb2877d8cf7ae8be70968780d17d5d00cc44479b2d2",
+    "FB_Cylinder.scl.tmpl": "be3eaa30d71ee6b3fb27d71ff90101d36c6b9e567eb15a1bd397200bc78bab30",
+    "FC_Cylinders.call.scl.tmpl": "8841ad8276dac718e3e7049134f4e9bf502957ef06c69406e27d7e71b3a3bc37",
+    "FC_Cylinders.scl.tmpl": "8498d1f790b8a1a1e781f7f86eed39f447c23e27f1b00ab94c8f3d408b5548b7",
+    "_header.scl.tmpl": "d01e5b5a7606eab120ef4b44c9825dc318a64202cec82688f44993764497deb7"
+  }
+}

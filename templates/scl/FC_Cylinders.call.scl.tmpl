@@ -1,0 +1,8 @@
+	REGION ${device_id}
+	    // ${device_description}
+	    "${block_name}"(Retracted := %${retracted_input},
+	    ${call_indent}Extended := %${extended_input},
+	    ${call_indent}MonitorTime := ${monitor_time},
+	    ${call_indent}Reset := #Reset);
+	END_REGION
+	

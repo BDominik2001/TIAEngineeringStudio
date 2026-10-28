@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.1",
+  "project_name": "Demo_Assembly_Cell",
+  "description": "Demo assembly cell with two pneumatic cylinders",
+  "target": {
+    "tia_version": "V18",
+    "plc_name": "PLC_1",
+    "cpu_family": "S7-1500"
+  },
+  "devices": [
+    {
+      "id": "CYL_01",
+      "kind": "cylinder",
+      "description": "Clamp cylinder, station 1",
+      "inputs": { "retracted": "I0.0", "extended": "I0.1" }
+    },
+    {
+      "id": "CYL_02",
+      "kind": "cylinder",
+      "description": "Lift cylinder, station 1",
+      "inputs": { "retracted": "I0.2", "extended": "I0.3" },
+      "parameters": { "monitor_time_ms": 3000 }
+    }
+  ]
+}

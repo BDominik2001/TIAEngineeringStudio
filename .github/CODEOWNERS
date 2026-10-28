@@ -1,0 +1,9 @@
+# Kód-tulajdonosok (docs/BRANCHING.md): a TIA-adapterek, az import és a kiadás módosításához
+# szakmai review kell. Új közreműködő esetén a megfelelő szakértő ide kerüljön.
+*                                   @BDominik2001
+/src/tia-adapters/                  @BDominik2001
+/src/csharp/Application/Workflow/   @BDominik2001
+/src/csharp/Ipc/                    @BDominik2001
+/templates/                         @BDominik2001
+/contracts/                         @BDominik2001
+/.github/workflows/                 @BDominik2001

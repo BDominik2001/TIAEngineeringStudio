@@ -1,0 +1,18 @@
+{
+  "solution": {
+    "path": "TIA-Engineering-Studio.sln",
+    "projects": [
+      "src\\csharp\\Core\\TiaStudio.Domain.csproj",
+      "src\\csharp\\Ipc\\TiaStudio.Contracts.csproj",
+      "src\\csharp\\Application\\TiaStudio.Application.csproj",
+      "src\\csharp\\Infrastructure\\TiaStudio.Infrastructure.csproj",
+      "src\\tia-adapters\\common\\TiaStudio.TiaAdapter.Common.csproj",
+      "src\\tia-adapters\\v18\\TiaStudio.TiaAdapter.V18.csproj",
+      "src\\tia-adapters\\v19\\TiaStudio.TiaAdapter.V19.csproj",
+      "src\\tia-adapters\\v20\\TiaStudio.TiaAdapter.V20.csproj",
+      "tests\\unit\\TiaStudio.UnitTests\\TiaStudio.UnitTests.csproj",
+      "tests\\integration\\TiaStudio.IntegrationTests\\TiaStudio.IntegrationTests.csproj",
+      "tests\\tia\\TiaStudio.TiaIntegrationTests\\TiaStudio.TiaIntegrationTests.csproj"
+    ]
+  }
+}
