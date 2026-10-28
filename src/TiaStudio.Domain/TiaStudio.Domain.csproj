@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Tiszta C# modellek: nincs Siemens-, WPF-, Python-, Rust- vagy JSON-függőség. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>TiaStudio.Domain</RootNamespace>
+  </PropertyGroup>
+</Project>

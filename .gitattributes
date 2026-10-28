@@ -1,0 +1,16 @@
+* text=auto
+
+# SCL-sablonok hash-elve vannak (template-set.json): sorvég nem változhat checkoutkor.
+python/generator/templates/*.tmpl text eol=lf
+python/generator/templates/*.json text eol=lf
+
+# Golden SCL-fájlok bájtpontosak (CRLF, ASCII)
+tests/GoldenScl/** -text
+
+# Közös tesztesetek és szerződések
+contracts/*.json text eol=lf
+tests/Contracts/*.json text eol=lf
+examples/*.json text eol=lf
+
+*.ps1 text eol=crlf
+*.sln text eol=crlf

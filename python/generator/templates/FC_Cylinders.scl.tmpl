@@ -1,0 +1,16 @@
+FUNCTION "FC_Cylinders" : Void
+TITLE = Cylinder diagnostics calls
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : TES
+FAMILY : TES
+VERSION : 1.0
+//Calls FB_Cylinder once per configured cylinder (${cylinder_count} total).
+//Call this FC from a cyclic OB (e.g. OB1). Inputs use absolute addresses from
+//the machine model; verify them against the hardware configuration.
+   VAR_INPUT 
+      Reset : Bool;   // Acknowledge the latched faults of all cylinders
+   END_VAR
+
+
+BEGIN
+${calls}END_FUNCTION

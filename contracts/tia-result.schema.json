@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tia-engineering-studio.local/contracts/tia-result/1.0",
+  "title": "TIA worker eredmény (protocol_version 1.0)",
+  "type": "object",
+  "required": ["protocol_version", "job_id", "requested_version", "actual_version", "operation", "status", "error_count", "warning_count", "messages", "saved_project", "sandbox_state"],
+  "properties": {
+    "protocol_version": { "const": "1.0" },
+    "job_id": { "type": ["string", "null"] },
+    "requested_version": { "type": ["string", "null"] },
+    "actual_version": { "enum": ["V18", "V19", "V20"] },
+    "operation": { "type": ["string", "null"] },
+    "status": { "enum": ["ValidationOnly", "Success", "Blocked", "Failed", "Cancelled", "Unsupported"] },
+    "error_code": { "type": ["string", "null"], "description": "contracts/error-codes.json egyik kódja; Success/ValidationOnly esetén null." },
+    "error_count": { "type": "integer", "minimum": 0 },
+    "warning_count": { "type": "integer", "minimum": 0 },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "text"],
+        "properties": {
+          "severity": { "enum": ["Info", "Warning", "Error"] },
+          "code": { "type": ["string", "null"] },
+          "text": { "type": "string" },
+          "path": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "saved_project": { "type": "boolean" },
+    "sandbox_state": {
+      "enum": ["NotTouched", "Unchanged", "ModifiedNotSaved", "Saved", "Unknown"],
+      "description": "Unknown: import után megszakadt/elakadt művelet; kézi ellenőrzés és ismert jó másolat visszaállítása szükséges."
+    },
+    "import_plan": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["import_order", "block_name", "block_type", "relative_path", "action"],
+        "properties": {
+          "import_order": { "type": "integer" },
+          "block_name": { "type": "string" },
+          "block_type": { "enum": ["FB", "FC", "DB", "UDT", "OB"] },
+          "relative_path": { "type": "string" },
+          "action": { "enum": ["Create", "Collision"] },
+          "existing_location": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "compile": {
+      "type": ["object", "null"],
+      "properties": {
+        "state": { "enum": ["Success", "Information", "Warning", "Error"] },
+        "error_count": { "type": "integer" },
+        "warning_count": { "type": "integer" },
+        "messages": { "type": "array" }
+      }
+    },
+    "capabilities": { "type": ["object", "null"] },
+    "worker": {
+      "type": ["object", "null"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "openness_linked": { "type": "boolean" },
+        "engineering_assembly_path": { "type": ["string", "null"] },
+        "engineering_assembly_version": { "type": ["string", "null"] }
+      }
+    },
+    "started_at_utc": { "type": ["string", "null"] },
+    "finished_at_utc": { "type": ["string", "null"] }
+  }
+}

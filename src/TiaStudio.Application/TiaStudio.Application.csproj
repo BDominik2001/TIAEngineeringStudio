@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Use case-ek, munkafolyamat-állapotgép és port interfészek. Infrastruktúra- és UI-független. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>TiaStudio.Application</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TiaStudio.Domain\TiaStudio.Domain.csproj" />
+    <ProjectReference Include="..\TiaStudio.Contracts\TiaStudio.Contracts.csproj" />
+  </ItemGroup>
+</Project>

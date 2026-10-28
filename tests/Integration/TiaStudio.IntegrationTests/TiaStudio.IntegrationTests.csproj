@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Folyamatközi integrációs tesztek:
+      * Rust natív DLL (P/Invoke) – előfeltétel: release build a rust/tes_validator mappában
+      * Python generátor (külön folyamat) – előfeltétel: python3/python a PATH-on vagy TES_PYTHON
+      * Valódi TIA Portal Openness worker – csak TES_TIA_INTEGRATION=V18|V19|V20 esetén (Windows)
+    Hiányzó előfeltételnél a teszt Skip, nem csendes siker.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">net48;net8.0</TargetFrameworks>
+    <PlatformTarget Condition="'$(OS)' == 'Windows_NT'">x64</PlatformTarget>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>TiaStudio.IntegrationTests</RootNamespace>
+    <TesRustRelease>$(MSBuildThisFileDirectory)..\..\..\rust\tes_validator\target\release\</TesRustRelease>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\TiaStudio.Infrastructure\TiaStudio.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(TesRustRelease)tes_validator.dll" Condition="Exists('$(TesRustRelease)tes_validator.dll')" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(TesRustRelease)libtes_validator.so" Condition="Exists('$(TesRustRelease)libtes_validator.so')" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(TesRustRelease)libtes_validator.dylib" Condition="Exists('$(TesRustRelease)libtes_validator.dylib')" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+</Project>

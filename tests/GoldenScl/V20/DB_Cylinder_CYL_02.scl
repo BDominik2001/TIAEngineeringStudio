@@ -1,0 +1,24 @@
+// ---------------------------------------------------------------------------
+// TIA Engineering Studio - generated source. Do not edit by hand; change the
+// machine model and regenerate instead.
+// Template set : tes-scl-core 1.0.0
+// Target       : TIA Portal V20, S7-1200, PLC "PLC_1"
+// Project      : Demo_Assembly_Cell
+// Block        : DB_Cylinder_CYL_02
+// Safety scope : NON-SAFETY. Diagnostics only, no outputs are written.
+//                Generated code must be reviewed by an engineer against the
+//                machine documentation and risk assessment before use.
+// ---------------------------------------------------------------------------
+DATA_BLOCK "DB_Cylinder_CYL_02"
+TITLE = Instance data of FB_Cylinder for CYL_02
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : TES
+FAMILY : TES
+VERSION : 1.0
+//Device CYL_02: Lift cylinder, station 1
+NON_RETAIN
+"FB_Cylinder"
+
+BEGIN
+
+END_DATA_BLOCK

@@ -1,0 +1,2259 @@
+{
+  "$comment": "Közös validációs esetek (docs/VALIDATION_RULES.md). A C#, Python és Rust tesztek mind ezt a fájlt futtatják; az elvárt hibalista sorrendje is kötelező.",
+  "rules_version": "1.1",
+  "cases": [
+    {
+      "name": "valid_minimal",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "warning",
+          "code": "IO_HW_NOT_VERIFIED",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "valid_with_optional_fields",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            },
+            "description": "Clamp",
+            "parameters": {
+              "monitor_time_ms": 3000
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ],
+        "description": "Demo cell"
+      },
+      "expected": [
+        {
+          "severity": "warning",
+          "code": "IO_HW_NOT_VERIFIED",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "valid_v19",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V19",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "warning",
+          "code": "IO_HW_NOT_VERIFIED",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "valid_v20_s7_1200_upper_bound",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V20",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1200"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I1023.7"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "warning",
+          "code": "IO_HW_NOT_VERIFIED",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "valid_s7_1500_upper_bound",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I32767.7"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "warning",
+          "code": "IO_HW_NOT_VERIFIED",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "invalid_json",
+      "input_raw": "{\"schema_version\": ",
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_JSON",
+          "path": "$"
+        }
+      ]
+    },
+    {
+      "name": "root_not_object",
+      "input_raw": "[]",
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_JSON",
+          "path": "$"
+        }
+      ]
+    },
+    {
+      "name": "empty_object",
+      "input": {},
+      "expected": [
+        {
+          "severity": "error",
+          "code": "MISSING_FIELD",
+          "path": "schema_version"
+        },
+        {
+          "severity": "error",
+          "code": "MISSING_FIELD",
+          "path": "project_name"
+        },
+        {
+          "severity": "error",
+          "code": "MISSING_FIELD",
+          "path": "target"
+        },
+        {
+          "severity": "error",
+          "code": "MISSING_FIELD",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "schema_version_1_0",
+      "input": {
+        "schema_version": "1.0",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNSUPPORTED_SCHEMA_VERSION",
+          "path": "schema_version"
+        }
+      ]
+    },
+    {
+      "name": "schema_version_number",
+      "input": {
+        "schema_version": 1.1,
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "schema_version"
+        }
+      ]
+    },
+    {
+      "name": "tia_version_v21",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V21",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNSUPPORTED_TIA_VERSION",
+          "path": "target.tia_version"
+        }
+      ]
+    },
+    {
+      "name": "tia_version_lowercase",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "v18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNSUPPORTED_TIA_VERSION",
+          "path": "target.tia_version"
+        }
+      ]
+    },
+    {
+      "name": "tia_version_number",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": 18,
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "target.tia_version"
+        }
+      ]
+    },
+    {
+      "name": "missing_plc_name",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "MISSING_FIELD",
+          "path": "target.plc_name"
+        }
+      ]
+    },
+    {
+      "name": "empty_plc_name",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IDENTIFIER",
+          "path": "target.plc_name"
+        }
+      ]
+    },
+    {
+      "name": "plc_name_leading_digit",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "1PLC",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IDENTIFIER",
+          "path": "target.plc_name"
+        }
+      ]
+    },
+    {
+      "name": "plc_name_with_hyphen_ok",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC-Main_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "warning",
+          "code": "IO_HW_NOT_VERIFIED",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "null_cpu_family",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": null
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "NULL_VALUE",
+          "path": "target.cpu_family"
+        }
+      ]
+    },
+    {
+      "name": "unsupported_cpu",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-300"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNSUPPORTED_CPU_FAMILY",
+          "path": "target.cpu_family"
+        }
+      ]
+    },
+    {
+      "name": "target_not_object",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": "V18",
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "target"
+        }
+      ]
+    },
+    {
+      "name": "unknown_root_fields_sorted",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ],
+        "zeta": 1,
+        "alpha": null
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNKNOWN_FIELD",
+          "path": "alpha"
+        },
+        {
+          "severity": "error",
+          "code": "UNKNOWN_FIELD",
+          "path": "zeta"
+        }
+      ]
+    },
+    {
+      "name": "unknown_target_field",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500",
+          "download": true
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNKNOWN_FIELD",
+          "path": "target.download"
+        }
+      ]
+    },
+    {
+      "name": "non_ascii_project_name",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Gép_1",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "NON_ASCII",
+          "path": "project_name"
+        }
+      ]
+    },
+    {
+      "name": "project_name_space",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IDENTIFIER",
+          "path": "project_name"
+        }
+      ]
+    },
+    {
+      "name": "project_name_too_long",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IDENTIFIER",
+          "path": "project_name"
+        }
+      ]
+    },
+    {
+      "name": "description_non_ascii",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ],
+        "description": "Szerelőcella"
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "NON_ASCII",
+          "path": "description"
+        }
+      ]
+    },
+    {
+      "name": "description_newline",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ],
+        "description": "a\nb"
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_VALUE",
+          "path": "description"
+        }
+      ]
+    },
+    {
+      "name": "description_too_long",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ],
+        "description": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_VALUE",
+          "path": "description"
+        }
+      ]
+    },
+    {
+      "name": "devices_empty",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": []
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "NO_DEVICES",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "devices_not_array",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": {}
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "devices_null",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": null
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "NULL_VALUE",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "device_not_object",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          "CYL_01",
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "devices[0]"
+        }
+      ]
+    },
+    {
+      "name": "device_id_number",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": 1,
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "devices[0].id"
+        }
+      ]
+    },
+    {
+      "name": "device_id_lowercase",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "cyl_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IDENTIFIER",
+          "path": "devices[0].id"
+        }
+      ]
+    },
+    {
+      "name": "device_id_too_long",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IDENTIFIER",
+          "path": "devices[0].id"
+        }
+      ]
+    },
+    {
+      "name": "device_id_double_underscore",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL__01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IDENTIFIER",
+          "path": "devices[0].id"
+        }
+      ]
+    },
+    {
+      "name": "device_id_non_ascii",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_Ä01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "NON_ASCII",
+          "path": "devices[0].id"
+        }
+      ]
+    },
+    {
+      "name": "duplicate_device_id",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "DUPLICATE_DEVICE_ID",
+          "path": "devices[1].id"
+        }
+      ]
+    },
+    {
+      "name": "missing_kind",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "MISSING_FIELD",
+          "path": "devices[0].kind"
+        }
+      ]
+    },
+    {
+      "name": "unsupported_kind_skips_rest",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "motor",
+            "inputs": {
+              "retracted": "I0.2"
+            },
+            "foo": 1
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNSUPPORTED_DEVICE_KIND",
+          "path": "devices[0].kind"
+        }
+      ]
+    },
+    {
+      "name": "kind_number",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": 5,
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "devices[0].kind"
+        }
+      ]
+    },
+    {
+      "name": "missing_inputs",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder"
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "MISSING_FIELD",
+          "path": "devices[0].inputs"
+        }
+      ]
+    },
+    {
+      "name": "missing_extended",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "MISSING_FIELD",
+          "path": "devices[0].inputs.extended"
+        }
+      ]
+    },
+    {
+      "name": "unknown_input_key",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1",
+              "aux": "I0.5"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNKNOWN_FIELD",
+          "path": "devices[0].inputs.aux"
+        }
+      ]
+    },
+    {
+      "name": "unknown_device_key",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            },
+            "outputs": {
+              "extend": "Q0.0"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNKNOWN_FIELD",
+          "path": "devices[1].outputs"
+        }
+      ]
+    },
+    {
+      "name": "output_address_rejected",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "Q0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IO_ADDRESS",
+          "path": "devices[0].inputs.retracted"
+        }
+      ]
+    },
+    {
+      "name": "percent_prefix_rejected",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "%I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IO_ADDRESS",
+          "path": "devices[0].inputs.retracted"
+        }
+      ]
+    },
+    {
+      "name": "bit_8_rejected",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.8",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IO_ADDRESS",
+          "path": "devices[0].inputs.retracted"
+        }
+      ]
+    },
+    {
+      "name": "leading_zero_rejected",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I01.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_IO_ADDRESS",
+          "path": "devices[0].inputs.retracted"
+        }
+      ]
+    },
+    {
+      "name": "address_number",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": 0,
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "devices[0].inputs.retracted"
+        }
+      ]
+    },
+    {
+      "name": "s7_1200_out_of_range",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1200"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I1024.0"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "IO_ADDRESS_OUT_OF_RANGE",
+          "path": "devices[1].inputs.extended"
+        }
+      ]
+    },
+    {
+      "name": "s7_1500_out_of_range",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I32768.0"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "IO_ADDRESS_OUT_OF_RANGE",
+          "path": "devices[1].inputs.extended"
+        }
+      ]
+    },
+    {
+      "name": "range_skipped_for_unknown_cpu",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-400"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I40000.0"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNSUPPORTED_CPU_FAMILY",
+          "path": "target.cpu_family"
+        }
+      ]
+    },
+    {
+      "name": "duplicate_address_within_device",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.0"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "DUPLICATE_IO_ADDRESS",
+          "path": "devices[0].inputs.extended"
+        }
+      ]
+    },
+    {
+      "name": "duplicate_address_across_devices",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.1",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "DUPLICATE_IO_ADDRESS",
+          "path": "devices[1].inputs.retracted"
+        }
+      ]
+    },
+    {
+      "name": "monitor_time_too_small",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            },
+            "parameters": {
+              "monitor_time_ms": 50
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_VALUE",
+          "path": "devices[0].parameters.monitor_time_ms"
+        }
+      ]
+    },
+    {
+      "name": "monitor_time_too_large",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            },
+            "parameters": {
+              "monitor_time_ms": 60001
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_VALUE",
+          "path": "devices[0].parameters.monitor_time_ms"
+        }
+      ]
+    },
+    {
+      "name": "monitor_time_float",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            },
+            "parameters": {
+              "monitor_time_ms": 2000.5
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "devices[0].parameters.monitor_time_ms"
+        }
+      ]
+    },
+    {
+      "name": "monitor_time_bool",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            },
+            "parameters": {
+              "monitor_time_ms": true
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "devices[0].parameters.monitor_time_ms"
+        }
+      ]
+    },
+    {
+      "name": "monitor_time_string",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            },
+            "parameters": {
+              "monitor_time_ms": "2000"
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "INVALID_TYPE",
+          "path": "devices[0].parameters.monitor_time_ms"
+        }
+      ]
+    },
+    {
+      "name": "parameters_unknown_key",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            },
+            "parameters": {
+              "force": true
+            }
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNKNOWN_FIELD",
+          "path": "devices[0].parameters.force"
+        }
+      ]
+    },
+    {
+      "name": "parameters_empty_ok",
+      "input": {
+        "schema_version": "1.1",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V18",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            },
+            "parameters": {}
+          },
+          {
+            "id": "CYL_02",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.2",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "warning",
+          "code": "IO_HW_NOT_VERIFIED",
+          "path": "devices"
+        }
+      ]
+    },
+    {
+      "name": "multiple_errors_in_order",
+      "input": {
+        "schema_version": "2.0",
+        "project_name": "Cell_A",
+        "target": {
+          "tia_version": "V21",
+          "plc_name": "PLC_1",
+          "cpu_family": "S7-1500"
+        },
+        "devices": [
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.1"
+            }
+          },
+          {
+            "id": "CYL_01",
+            "kind": "cylinder",
+            "inputs": {
+              "retracted": "I0.0",
+              "extended": "I0.3"
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "severity": "error",
+          "code": "UNSUPPORTED_SCHEMA_VERSION",
+          "path": "schema_version"
+        },
+        {
+          "severity": "error",
+          "code": "UNSUPPORTED_TIA_VERSION",
+          "path": "target.tia_version"
+        },
+        {
+          "severity": "error",
+          "code": "DUPLICATE_DEVICE_ID",
+          "path": "devices[1].id"
+        },
+        {
+          "severity": "error",
+          "code": "DUPLICATE_IO_ADDRESS",
+          "path": "devices[1].inputs.retracted"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+name: ci
+
+# TIA nélküli ellenőrzések. Valódi TIA Portal V18/V19/V20 integrációs teszt csak
+# telepített TIA-val rendelkező gépen futtatható (scripts/test-tia-integration.ps1).
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Rust toolchain
+        run: rustup component add clippy
+      - name: Offline tests (Python, Rust, .NET portable)
+        run: bash scripts/test-offline.sh
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Rust toolchain
+        run: rustup component add clippy
+      - name: Offline tests (incl. WPF Desktop build, net48 + net8.0)
+        shell: pwsh
+        run: ./scripts/test-offline.ps1
+      - name: Release layout (workers unlinked – no TIA on the runner)
+        shell: pwsh
+        run: ./scripts/build-desktop.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TiaEngineeringStudio-unlinked
+          path: dist/TiaEngineeringStudio

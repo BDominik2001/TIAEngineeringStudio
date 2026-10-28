@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Generált fájl (OpennessWorker.targets / scripts/configure-workers.ps1).
+  A Siemens által leírt, strong name ellenőrzést megőrző assembly-feloldás:
+  a Siemens.Engineering a helyi TIA Portal @TIA_VERSION@ telepítésből töltődik be,
+  a DLL-t nem másoljuk és nem terjesztjük.
+-->
+<configuration>
+  <startup>
+    <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.8" />
+  </startup>
+  <runtime>
+    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <dependentAssembly>
+        <assemblyIdentity name="Siemens.Engineering" culture="neutral" publicKeyToken="d29ec89bac048f84" />
+        <codeBase version="@TIA_ASSEMBLY_VERSION@" href="FILE://@TIA_API_PATH@\Siemens.Engineering.dll" />
+      </dependentAssembly>
+    </assemblyBinding>
+  </runtime>
+</configuration>

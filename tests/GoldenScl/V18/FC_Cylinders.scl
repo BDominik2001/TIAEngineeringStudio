@@ -1,0 +1,43 @@
+// ---------------------------------------------------------------------------
+// TIA Engineering Studio - generated source. Do not edit by hand; change the
+// machine model and regenerate instead.
+// Template set : tes-scl-core 1.0.0
+// Target       : TIA Portal V18, S7-1500, PLC "PLC_1"
+// Project      : Demo_Assembly_Cell
+// Block        : FC_Cylinders
+// Safety scope : NON-SAFETY. Diagnostics only, no outputs are written.
+//                Generated code must be reviewed by an engineer against the
+//                machine documentation and risk assessment before use.
+// ---------------------------------------------------------------------------
+FUNCTION "FC_Cylinders" : Void
+TITLE = Cylinder diagnostics calls
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : TES
+FAMILY : TES
+VERSION : 1.0
+//Calls FB_Cylinder once per configured cylinder (2 total).
+//Call this FC from a cyclic OB (e.g. OB1). Inputs use absolute addresses from
+//the machine model; verify them against the hardware configuration.
+   VAR_INPUT 
+      Reset : Bool;   // Acknowledge the latched faults of all cylinders
+   END_VAR
+
+
+BEGIN
+	REGION CYL_01
+	    // Clamp cylinder, station 1
+	    "DB_Cylinder_CYL_01"(Retracted := %I0.0,
+	                         Extended := %I0.1,
+	                         MonitorTime := T#2S,
+	                         Reset := #Reset);
+	END_REGION
+	
+	REGION CYL_02
+	    // Lift cylinder, station 1
+	    "DB_Cylinder_CYL_02"(Retracted := %I0.2,
+	                         Extended := %I0.3,
+	                         MonitorTime := T#3S,
+	                         Reset := #Reset);
+	END_REGION
+	
+END_FUNCTION
