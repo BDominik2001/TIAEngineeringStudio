@@ -98,7 +98,7 @@ namespace TiaStudio.UnitTests
         public void DigestIsStableAndBindsEveryField()
         {
             string baseline = ApprovalDigest.Compute(Command(), new string('m', 64), Files);
-            Assert.Equal(baseline, ApprovalDigest.Compute(Command(), new string('m', 64), Files.Reverse()));
+            Assert.Equal(baseline, ApprovalDigest.Compute(Command(), new string('m', 64), Enumerable.Reverse(Files)));
 
             Func<TiaCommand, TiaCommand>[] mutations =
             {
