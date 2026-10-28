@@ -1,40 +1,43 @@
 <Window x:Class="TiaStudio.Desktop.SplashWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="TIA Engineering Studio" Width="660" Height="420"
+        Title="TIA Engineering Studio" Width="720" Height="540"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen" ShowInTaskbar="True" Icon="Assets/app.ico"
         FontFamily="Segoe UI" UseLayoutRounding="True">
     <Window.Resources>
         <CubicEase x:Key="EaseOut" EasingMode="EaseOut" />
         <CubicEase x:Key="EaseInOut" EasingMode="EaseInOut" />
-        <BackEase x:Key="Pop" EasingMode="EaseOut" Amplitude="0.35" />
+        <BackEase x:Key="Pop" EasingMode="EaseOut" Amplitude="0.3" />
 
-        <!-- Belépő animáció: jelvény → funkcióblokk "kirajzolódik" → név → alcím -->
+        <!--
+            1. fázis: az ikon beugrik, felragyog, fénycsík fut át rajta.
+            2. fázis: az ikon felcsúszik a teljes logó ikonjának helyére, és átúszik a teljes logóba;
+               a felirat (TIA / ENGINEERING / STUDIO) fentről lefelé tárul fel.
+            A célpozíció (95% méret, a logóméret 10,9%-ával feljebb) a két logókép illesztéséből adódik.
+        -->
         <Storyboard x:Key="Intro" Duration="0:0:3.3">
             <DoubleAnimation Storyboard.TargetName="Card" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.35" />
-            <DoubleAnimation Storyboard.TargetName="LogoHost" Storyboard.TargetProperty="Opacity" From="0" To="1" BeginTime="0:0:0.10" Duration="0:0:0.45" />
-            <DoubleAnimation Storyboard.TargetName="LogoScale" Storyboard.TargetProperty="ScaleX" From="0.65" To="1" BeginTime="0:0:0.10" Duration="0:0:0.6" EasingFunction="{StaticResource Pop}" />
-            <DoubleAnimation Storyboard.TargetName="LogoScale" Storyboard.TargetProperty="ScaleY" From="0.65" To="1" BeginTime="0:0:0.10" Duration="0:0:0.6" EasingFunction="{StaticResource Pop}" />
 
-            <DoubleAnimation Storyboard.TargetName="BlockScale" Storyboard.TargetProperty="ScaleY" From="0" To="1" BeginTime="0:0:0.40" Duration="0:0:0.40" EasingFunction="{StaticResource EaseOut}" />
-            <DoubleAnimation Storyboard.TargetName="Pin1Scale" Storyboard.TargetProperty="ScaleX" From="0" To="1" BeginTime="0:0:0.70" Duration="0:0:0.30" EasingFunction="{StaticResource EaseOut}" />
-            <DoubleAnimation Storyboard.TargetName="Pin2Scale" Storyboard.TargetProperty="ScaleX" From="0" To="1" BeginTime="0:0:0.78" Duration="0:0:0.30" EasingFunction="{StaticResource EaseOut}" />
-            <DoubleAnimation Storyboard.TargetName="Bar1Scale" Storyboard.TargetProperty="ScaleX" From="0" To="1" BeginTime="0:0:0.85" Duration="0:0:0.30" EasingFunction="{StaticResource EaseOut}" />
-            <DoubleAnimation Storyboard.TargetName="Bar2Scale" Storyboard.TargetProperty="ScaleX" From="0" To="1" BeginTime="0:0:0.95" Duration="0:0:0.30" EasingFunction="{StaticResource EaseOut}" />
-            <DoubleAnimation Storyboard.TargetName="Bar3Scale" Storyboard.TargetProperty="ScaleX" From="0" To="1" BeginTime="0:0:1.05" Duration="0:0:0.30" EasingFunction="{StaticResource EaseOut}" />
-            <DoubleAnimation Storyboard.TargetName="OutScale" Storyboard.TargetProperty="ScaleX" From="0" To="1" BeginTime="0:0:1.15" Duration="0:0:0.25" EasingFunction="{StaticResource EaseOut}" />
-            <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleX" From="0" To="1" BeginTime="0:0:1.35" Duration="0:0:0.35" EasingFunction="{StaticResource Pop}" />
-            <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleY" From="0" To="1" BeginTime="0:0:1.35" Duration="0:0:0.35" EasingFunction="{StaticResource Pop}" />
-            <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" From="0" To="0.55" BeginTime="0:0:1.40" Duration="0:0:0.30" AutoReverse="True" />
+            <DoubleAnimation Storyboard.TargetName="MarkHost" Storyboard.TargetProperty="Opacity" From="0" To="1" BeginTime="0:0:0.10" Duration="0:0:0.45" />
+            <DoubleAnimation Storyboard.TargetName="MarkScale" Storyboard.TargetProperty="ScaleX" From="0.5" To="0.86" BeginTime="0:0:0.10" Duration="0:0:0.75" EasingFunction="{StaticResource Pop}" />
+            <DoubleAnimation Storyboard.TargetName="MarkScale" Storyboard.TargetProperty="ScaleY" From="0.5" To="0.86" BeginTime="0:0:0.10" Duration="0:0:0.75" EasingFunction="{StaticResource Pop}" />
+            <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" From="0" To="0.75" BeginTime="0:0:0.35" Duration="0:0:0.6" EasingFunction="{StaticResource EaseOut}" />
+            <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="0.35" BeginTime="0:0:1.40" Duration="0:0:0.8" EasingFunction="{StaticResource EaseInOut}" />
+            <DoubleAnimation Storyboard.TargetName="MarkSheenShift" Storyboard.TargetProperty="X" From="-1.2" To="1.2" BeginTime="0:0:0.75" Duration="0:0:0.7" EasingFunction="{StaticResource EaseInOut}" />
 
-            <DoubleAnimation Storyboard.TargetName="LogoShift" Storyboard.TargetProperty="Y" From="56" To="0" BeginTime="0:0:1.60" Duration="0:0:0.55" EasingFunction="{StaticResource EaseInOut}" />
-            <DoubleAnimation Storyboard.TargetName="TitleText" Storyboard.TargetProperty="Opacity" From="0" To="1" BeginTime="0:0:1.85" Duration="0:0:0.45" />
-            <DoubleAnimation Storyboard.TargetName="TitleShift" Storyboard.TargetProperty="Y" From="14" To="0" BeginTime="0:0:1.85" Duration="0:0:0.50" EasingFunction="{StaticResource EaseOut}" />
-            <DoubleAnimation Storyboard.TargetName="StudioText" Storyboard.TargetProperty="Opacity" From="0" To="1" BeginTime="0:0:2.10" Duration="0:0:0.45" />
-            <DoubleAnimation Storyboard.TargetName="StudioShift" Storyboard.TargetProperty="Y" From="10" To="0" BeginTime="0:0:2.10" Duration="0:0:0.50" EasingFunction="{StaticResource EaseOut}" />
-            <DoubleAnimation Storyboard.TargetName="AccentLine" Storyboard.TargetProperty="Width" From="0" To="220" BeginTime="0:0:2.20" Duration="0:0:0.60" EasingFunction="{StaticResource EaseInOut}" />
-            <DoubleAnimation Storyboard.TargetName="Tagline" Storyboard.TargetProperty="Opacity" From="0" To="1" BeginTime="0:0:2.40" Duration="0:0:0.45" />
+            <DoubleAnimation Storyboard.TargetName="MarkScale" Storyboard.TargetProperty="ScaleX" To="0.95" BeginTime="0:0:1.45" Duration="0:0:0.6" EasingFunction="{StaticResource EaseInOut}" />
+            <DoubleAnimation Storyboard.TargetName="MarkScale" Storyboard.TargetProperty="ScaleY" To="0.95" BeginTime="0:0:1.45" Duration="0:0:0.6" EasingFunction="{StaticResource EaseInOut}" />
+            <DoubleAnimation Storyboard.TargetName="MarkShift" Storyboard.TargetProperty="X" To="3.5" BeginTime="0:0:1.45" Duration="0:0:0.6" EasingFunction="{StaticResource EaseInOut}" />
+            <DoubleAnimation Storyboard.TargetName="MarkShift" Storyboard.TargetProperty="Y" To="-37" BeginTime="0:0:1.45" Duration="0:0:0.6" EasingFunction="{StaticResource EaseInOut}" />
+            <DoubleAnimation Storyboard.TargetName="FullLogo" Storyboard.TargetProperty="Opacity" From="0" To="1" BeginTime="0:0:1.80" Duration="0:0:0.35" />
+            <DoubleAnimation Storyboard.TargetName="MarkHost" Storyboard.TargetProperty="Opacity" To="0" BeginTime="0:0:1.90" Duration="0:0:0.35" />
+            <DoubleAnimation Storyboard.TargetName="RevealSolid" Storyboard.TargetProperty="Offset" From="0.42" To="1" BeginTime="0:0:1.95" Duration="0:0:0.85" EasingFunction="{StaticResource EaseInOut}" />
+            <DoubleAnimation Storyboard.TargetName="RevealFade" Storyboard.TargetProperty="Offset" From="0.52" To="1" BeginTime="0:0:1.95" Duration="0:0:0.85" EasingFunction="{StaticResource EaseInOut}" />
+            <DoubleAnimation Storyboard.TargetName="FullSheenShift" Storyboard.TargetProperty="X" From="-1.2" To="1.2" BeginTime="0:0:2.55" Duration="0:0:0.6" EasingFunction="{StaticResource EaseInOut}" />
+
+            <DoubleAnimation Storyboard.TargetName="AccentLine" Storyboard.TargetProperty="Width" From="0" To="200" BeginTime="0:0:2.55" Duration="0:0:0.5" EasingFunction="{StaticResource EaseInOut}" />
+            <DoubleAnimation Storyboard.TargetName="Tagline" Storyboard.TargetProperty="Opacity" From="0" To="1" BeginTime="0:0:2.65" Duration="0:0:0.45" />
         </Storyboard>
 
         <!-- Kilépő animáció: finom halványulás és enyhe ráközelítés -->
@@ -51,114 +54,100 @@
         </Grid.RenderTransform>
         <Border x:Name="Card" Margin="24" CornerRadius="12" Opacity="0">
             <Border.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Offset="0" Color="#2C353E" />
-                    <GradientStop Offset="0.55" Color="#1C2329" />
-                    <GradientStop Offset="1" Color="#13181C" />
-                </LinearGradientBrush>
+                <RadialGradientBrush Center="0.5,0.42" GradientOrigin="0.5,0.42" RadiusX="0.75" RadiusY="0.8">
+                    <GradientStop Offset="0" Color="#26344A" />
+                    <GradientStop Offset="0.6" Color="#18202C" />
+                    <GradientStop Offset="1" Color="#10151C" />
+                </RadialGradientBrush>
             </Border.Background>
             <Border.Effect>
                 <DropShadowEffect BlurRadius="26" ShadowDepth="4" Opacity="0.55" Color="Black" />
             </Border.Effect>
             <Grid ClipToBounds="True">
                 <!-- Fogaskerék-vízjel, mint a TIA portál-nézetben -->
-                <Path Data="{StaticResource Gear.Watermark}" Fill="#08FFFFFF" Stretch="Uniform" Width="520" Height="460"
+                <Path Data="{StaticResource Gear.Watermark}" Fill="#07FFFFFF" Stretch="Uniform" Width="520" Height="460"
                       HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-170,-190" />
                 <Border Height="3" VerticalAlignment="Top" CornerRadius="12,12,0,0">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                             <GradientStop Offset="0" Color="#003E9AB5" />
-                            <GradientStop Offset="0.5" Color="#FF6FB8CC" />
+                            <GradientStop Offset="0.5" Color="#FF5AA9E6" />
                             <GradientStop Offset="1" Color="#003E9AB5" />
                         </LinearGradientBrush>
                     </Border.Background>
                 </Border>
 
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <!-- Animált logó (docs/assets/logo.svg geometriája, 64x64) -->
-                    <Grid x:Name="LogoHost" Width="120" Height="120" Opacity="0" RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Center">
-                        <Grid.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform x:Name="LogoScale" />
-                                <TranslateTransform x:Name="LogoShift" Y="56" />
-                            </TransformGroup>
-                        </Grid.RenderTransform>
-                        <Ellipse x:Name="Glow" Width="150" Height="150" Opacity="0" Margin="-15">
+                    <Grid Width="340" Height="340">
+                        <Ellipse x:Name="Glow" Width="420" Height="420" Margin="-40" Opacity="0" IsHitTestVisible="False">
                             <Ellipse.Fill>
                                 <RadialGradientBrush>
-                                    <GradientStop Offset="0" Color="#AAF39C12" />
-                                    <GradientStop Offset="1" Color="#00F39C12" />
+                                    <GradientStop Offset="0" Color="#665AA9E6" />
+                                    <GradientStop Offset="0.45" Color="#223E7CC4" />
+                                    <GradientStop Offset="1" Color="#003E7CC4" />
                                 </RadialGradientBrush>
                             </Ellipse.Fill>
                         </Ellipse>
-                        <Viewbox>
-                            <Canvas Width="64" Height="64">
-                                <Rectangle Canvas.Left="2" Canvas.Top="2" Width="60" Height="60" RadiusX="13" RadiusY="13">
-                                    <Rectangle.Fill>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop Offset="0" Color="#4D5966" />
-                                            <GradientStop Offset="1" Color="#252D35" />
-                                        </LinearGradientBrush>
-                                    </Rectangle.Fill>
-                                </Rectangle>
-                                <Rectangle Canvas.Left="8.5" Canvas.Top="22.5" Width="11.5" Height="3" RadiusX="1.5" RadiusY="1.5" Fill="#E9EDF0" RenderTransformOrigin="1,0.5">
-                                    <Rectangle.RenderTransform>
-                                        <ScaleTransform x:Name="Pin1Scale" ScaleX="0" />
-                                    </Rectangle.RenderTransform>
-                                </Rectangle>
-                                <Rectangle Canvas.Left="8.5" Canvas.Top="38.5" Width="11.5" Height="3" RadiusX="1.5" RadiusY="1.5" Fill="#E9EDF0" RenderTransformOrigin="1,0.5">
-                                    <Rectangle.RenderTransform>
-                                        <ScaleTransform x:Name="Pin2Scale" ScaleX="0" />
-                                    </Rectangle.RenderTransform>
-                                </Rectangle>
-                                <Rectangle Canvas.Left="18.5" Canvas.Top="12.5" Width="27" Height="39" RadiusX="4" RadiusY="4" Fill="#E9EDF0" RenderTransformOrigin="0.5,0.5">
-                                    <Rectangle.RenderTransform>
-                                        <ScaleTransform x:Name="BlockScale" ScaleY="0" />
-                                    </Rectangle.RenderTransform>
-                                </Rectangle>
-                                <Rectangle Canvas.Left="26" Canvas.Top="21" Width="12" Height="4" RadiusX="2" RadiusY="2" Fill="#3E9AB5" RenderTransformOrigin="0,0.5">
-                                    <Rectangle.RenderTransform>
-                                        <ScaleTransform x:Name="Bar1Scale" ScaleX="0" />
-                                    </Rectangle.RenderTransform>
-                                </Rectangle>
-                                <Rectangle Canvas.Left="26" Canvas.Top="30" Width="12" Height="4" RadiusX="2" RadiusY="2" Fill="#BF3E9AB5" RenderTransformOrigin="0,0.5">
-                                    <Rectangle.RenderTransform>
-                                        <ScaleTransform x:Name="Bar2Scale" ScaleX="0" />
-                                    </Rectangle.RenderTransform>
-                                </Rectangle>
-                                <Rectangle Canvas.Left="26" Canvas.Top="39" Width="12" Height="4" RadiusX="2" RadiusY="2" Fill="#803E9AB5" RenderTransformOrigin="0,0.5">
-                                    <Rectangle.RenderTransform>
-                                        <ScaleTransform x:Name="Bar3Scale" ScaleX="0" />
-                                    </Rectangle.RenderTransform>
-                                </Rectangle>
-                                <Rectangle Canvas.Left="44" Canvas.Top="30.5" Width="9" Height="3" RadiusX="1.5" RadiusY="1.5" Fill="#F39C12" RenderTransformOrigin="0,0.5">
-                                    <Rectangle.RenderTransform>
-                                        <ScaleTransform x:Name="OutScale" ScaleX="0" />
-                                    </Rectangle.RenderTransform>
-                                </Rectangle>
-                                <Ellipse Canvas.Left="51" Canvas.Top="28.5" Width="7" Height="7" Fill="#F39C12" RenderTransformOrigin="0.5,0.5">
-                                    <Ellipse.RenderTransform>
-                                        <ScaleTransform x:Name="DotScale" ScaleX="0" ScaleY="0" />
-                                    </Ellipse.RenderTransform>
-                                </Ellipse>
-                            </Canvas>
-                        </Viewbox>
+
+                        <!-- 2. fázis: teljes logó, fentről lefelé feltáruló felirattal -->
+                        <Grid x:Name="FullLogo" Opacity="0">
+                            <Grid.OpacityMask>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop x:Name="RevealSolid" Offset="0.42" Color="#FF000000" />
+                                    <GradientStop x:Name="RevealFade" Offset="0.52" Color="#00000000" />
+                                </LinearGradientBrush>
+                            </Grid.OpacityMask>
+                            <Image Source="{StaticResource Logo.Full}" RenderOptions.BitmapScalingMode="HighQuality" />
+                            <!-- fénycsík a feliraton -->
+                            <Rectangle IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1" Opacity="0.5">
+                                        <LinearGradientBrush.RelativeTransform>
+                                            <TranslateTransform x:Name="FullSheenShift" X="-1.2" />
+                                        </LinearGradientBrush.RelativeTransform>
+                                        <GradientStop Offset="0.40" Color="#00FFFFFF" />
+                                        <GradientStop Offset="0.50" Color="#CCFFFFFF" />
+                                        <GradientStop Offset="0.60" Color="#00FFFFFF" />
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                                <Rectangle.OpacityMask>
+                                    <ImageBrush ImageSource="{StaticResource Logo.Full}" />
+                                </Rectangle.OpacityMask>
+                                <Rectangle.Clip>
+                                    <RectangleGeometry Rect="0,200,340,140" />
+                                </Rectangle.Clip>
+                            </Rectangle>
+                        </Grid>
+
+                        <!-- 1. fázis: ikon -->
+                        <Grid x:Name="MarkHost" Width="323" Height="323" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform x:Name="MarkScale" ScaleX="0.5" ScaleY="0.5" />
+                                    <TranslateTransform x:Name="MarkShift" />
+                                </TransformGroup>
+                            </Grid.RenderTransform>
+                            <Image Source="{StaticResource Logo.Image}" RenderOptions.BitmapScalingMode="HighQuality" />
+                            <Rectangle IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1" Opacity="0.55">
+                                        <LinearGradientBrush.RelativeTransform>
+                                            <TranslateTransform x:Name="MarkSheenShift" X="-1.2" />
+                                        </LinearGradientBrush.RelativeTransform>
+                                        <GradientStop Offset="0.38" Color="#00FFFFFF" />
+                                        <GradientStop Offset="0.50" Color="#CCFFFFFF" />
+                                        <GradientStop Offset="0.62" Color="#00FFFFFF" />
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                                <Rectangle.OpacityMask>
+                                    <ImageBrush ImageSource="{StaticResource Logo.Image}" />
+                                </Rectangle.OpacityMask>
+                            </Rectangle>
+                        </Grid>
                     </Grid>
 
-                    <TextBlock x:Name="TitleText" Text="TIA Engineering" Foreground="#F2F4F5" FontSize="34" FontWeight="Light"
-                               HorizontalAlignment="Center" Margin="0,22,0,0" Opacity="0">
-                        <TextBlock.RenderTransform>
-                            <TranslateTransform x:Name="TitleShift" Y="14" />
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                    <TextBlock x:Name="StudioText" Text="S  T  U  D  I  O" Foreground="#6FB8CC" FontSize="15" FontWeight="SemiBold"
-                               HorizontalAlignment="Center" Margin="0,2,0,0" Opacity="0">
-                        <TextBlock.RenderTransform>
-                            <TranslateTransform x:Name="StudioShift" Y="10" />
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                    <Border x:Name="AccentLine" Height="2" Width="0" Background="#F39C12" HorizontalAlignment="Center" Margin="0,14,0,0" CornerRadius="1" />
-                    <TextBlock x:Name="Tagline" Text="Siemens TIA Portal  V18 · V19 · V20" Foreground="#9AA6B1" FontSize="12.5"
+                    <Border x:Name="AccentLine" Height="2" Width="0" Background="#F39C12" HorizontalAlignment="Center" Margin="0,6,0,0" CornerRadius="1" />
+                    <TextBlock x:Name="Tagline" Text="Siemens TIA Portal  V18 · V19 · V20" Foreground="#9FB0C3" FontSize="13"
                                HorizontalAlignment="Center" Margin="0,10,0,0" Opacity="0" />
                 </StackPanel>
             </Grid>

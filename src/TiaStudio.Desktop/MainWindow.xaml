@@ -138,7 +138,7 @@
                         <DockPanel>
                             <Path DockPanel.Dock="Left" Data="M12,3 L22,20 H2 Z M12,9.5 V14 M12,17 V17.2" Stroke="{StaticResource Brush.Orange}" StrokeThickness="1.6"
                                   StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="16" Height="15" Stretch="Uniform" VerticalAlignment="Top" Margin="0,1,8,0" />
-                            <TextBlock Foreground="{StaticResource Brush.TextOnDarkMuted}" FontSize="11" TextWrapping="Wrap"
+                            <TextBlock FontFamily="Segoe UI" Foreground="{StaticResource Brush.TextOnDarkMuted}" FontSize="11" TextWrapping="Wrap"
                                        Text="Csak offline sandboxba importál. Nincs letöltés, online kapcsolat, forcing vagy safety-módosítás." />
                         </DockPanel>
                     </Border>
@@ -190,7 +190,7 @@
                                         <StackPanel>
                                             <Border Background="{StaticResource Brush.StartTile}" Width="250" Height="46" HorizontalAlignment="Left" Margin="0,0,0,12">
                                                 <DockPanel Margin="14,0">
-                                                    <Image DockPanel.Dock="Right" Source="{StaticResource Logo.Image}" Width="30" Height="30" />
+                                                    <Image DockPanel.Dock="Right" Source="{StaticResource Logo.Image}" Width="36" Height="36" RenderOptions.BitmapScalingMode="HighQuality" />
                                                     <TextBlock Text="TIA Engineering Studio" Style="{StaticResource TileTitle}" />
                                                 </DockPanel>
                                             </Border>

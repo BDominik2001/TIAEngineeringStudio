@@ -99,60 +99,9 @@
     <Geometry x:Key="Icon.Arrow">M0,5 H14 M10,1 L14,5 L10,9</Geometry>
     <Geometry x:Key="Gear.Watermark">M360.0,200.0 L389.1,218.6 L386.3,237.1 L353.1,246.4 L347.8,261.2 L367.6,289.6 L358.0,305.6 L323.7,301.5 L313.1,313.1 L320.5,346.9 L305.6,358.0 L275.4,341.1 L261.2,347.8 L255.2,381.8 L237.1,386.3 L215.7,359.2 L200.0,360.0 L181.4,389.1 L162.9,386.3 L153.6,353.1 L138.8,347.8 L110.4,367.6 L94.4,358.0 L98.5,323.7 L86.9,313.1 L53.1,320.5 L42.0,305.6 L58.9,275.4 L52.2,261.2 L18.2,255.2 L13.7,237.1 L40.8,215.7 L40.0,200.0 L10.9,181.4 L13.7,162.9 L46.9,153.6 L52.2,138.8 L32.4,110.4 L42.0,94.4 L76.3,98.5 L86.9,86.9 L79.5,53.1 L94.4,42.0 L124.6,58.9 L138.8,52.2 L144.8,18.2 L162.9,13.7 L184.3,40.8 L200.0,40.0 L218.6,10.9 L237.1,13.7 L246.4,46.9 L261.2,52.2 L289.6,32.4 L305.6,42.0 L301.5,76.3 L313.1,86.9 L346.9,79.5 L358.0,94.4 L341.1,124.6 L347.8,138.8 L381.8,144.8 L386.3,162.9 L359.2,184.3 Z M270.0,200.0 A70,70 0 1 0 130.0,200.0 A70,70 0 1 0 270.0,200.0 Z M498.0,90.0 L514.2,102.4 L511.8,114.6 L492.1,119.8 L487.5,129.0 L495.4,147.8 L487.2,157.2 L467.5,151.9 L459.0,157.5 L456.4,177.8 L444.6,181.8 L430.2,167.3 L420.0,168.0 L407.6,184.2 L395.4,181.8 L390.2,162.1 L381.0,157.5 L362.2,165.4 L352.8,157.2 L358.1,137.5 L352.5,129.0 L332.2,126.4 L328.2,114.6 L342.7,100.2 L342.0,90.0 L325.8,77.6 L328.2,65.4 L347.9,60.2 L352.5,51.0 L344.6,32.2 L352.8,22.8 L372.5,28.1 L381.0,22.5 L383.6,2.2 L395.4,-1.8 L409.8,12.7 L420.0,12.0 L432.4,-4.2 L444.6,-1.8 L449.8,17.9 L459.0,22.5 L477.8,14.6 L487.2,22.8 L481.9,42.5 L487.5,51.0 L507.8,53.6 L511.8,65.4 L497.3,79.8 Z M454.0,90.0 A34,34 0 1 0 386.0,90.0 A34,34 0 1 0 454.0,90.0 Z</Geometry>
 
-    <!-- Logó (docs/assets/logo.svg vektoros megfelelője, 64x64) -->
-    <DrawingImage x:Key="Logo.Image">
-        <DrawingImage.Drawing>
-            <DrawingGroup>
-                <GeometryDrawing Geometry="M0,0 H64 V64 H0 Z" Brush="Transparent" />
-                <GeometryDrawing>
-                    <GeometryDrawing.Brush>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Offset="0" Color="#46525E" />
-                            <GradientStop Offset="1" Color="#232B33" />
-                        </LinearGradientBrush>
-                    </GeometryDrawing.Brush>
-                    <GeometryDrawing.Geometry>
-                        <RectangleGeometry Rect="2,2,60,60" RadiusX="13" RadiusY="13" />
-                    </GeometryDrawing.Geometry>
-                </GeometryDrawing>
-                <GeometryDrawing Geometry="M10,24 H20 M10,40 H20">
-                    <GeometryDrawing.Pen>
-                        <Pen Brush="#E9EDF0" Thickness="3" StartLineCap="Round" EndLineCap="Round" />
-                    </GeometryDrawing.Pen>
-                </GeometryDrawing>
-                <GeometryDrawing Brush="#E9EDF0">
-                    <GeometryDrawing.Geometry>
-                        <RectangleGeometry Rect="18.5,12.5,27,39" RadiusX="4" RadiusY="4" />
-                    </GeometryDrawing.Geometry>
-                </GeometryDrawing>
-                <GeometryDrawing Geometry="M44,32 H52">
-                    <GeometryDrawing.Pen>
-                        <Pen Brush="#F39C12" Thickness="3" StartLineCap="Round" EndLineCap="Round" />
-                    </GeometryDrawing.Pen>
-                </GeometryDrawing>
-                <GeometryDrawing Brush="#F39C12">
-                    <GeometryDrawing.Geometry>
-                        <EllipseGeometry Center="54.5,32" RadiusX="3.5" RadiusY="3.5" />
-                    </GeometryDrawing.Geometry>
-                </GeometryDrawing>
-                <GeometryDrawing Brush="#3E9AB5">
-                    <GeometryDrawing.Geometry>
-                        <RectangleGeometry Rect="26,21,12,4" RadiusX="2" RadiusY="2" />
-                    </GeometryDrawing.Geometry>
-                </GeometryDrawing>
-                <GeometryDrawing Brush="#BF3E9AB5">
-                    <GeometryDrawing.Geometry>
-                        <RectangleGeometry Rect="26,30,12,4" RadiusX="2" RadiusY="2" />
-                    </GeometryDrawing.Geometry>
-                </GeometryDrawing>
-                <GeometryDrawing Brush="#803E9AB5">
-                    <GeometryDrawing.Geometry>
-                        <RectangleGeometry Rect="26,39,12,4" RadiusX="2" RadiusY="2" />
-                    </GeometryDrawing.Geometry>
-                </GeometryDrawing>
-            </DrawingGroup>
-        </DrawingImage.Drawing>
-    </DrawingImage>
+    <!-- Logó (docs/assets/brand, scripts/tools/build_brand_assets.py) -->
+    <BitmapImage x:Key="Logo.Image" UriSource="pack://application:,,,/TiaStudio.Desktop;component/Assets/logo-mark.png" />
+    <BitmapImage x:Key="Logo.Full" UriSource="pack://application:,,,/TiaStudio.Desktop;component/Assets/logo-full.png" />
 
     <!-- Alap tipográfia -->
     <Style TargetType="TextBlock">
@@ -384,10 +333,10 @@
                                         </Button>
                                     </StackPanel>
                                     <StackPanel x:Name="Wordmark" DockPanel.Dock="Right" Orientation="Vertical" Margin="0,2,18,0" VerticalAlignment="Center">
-                                        <TextBlock Text="TIA Engineering" Foreground="#F2F4F5" FontSize="12" HorizontalAlignment="Right" />
-                                        <TextBlock Text="S T U D I O" Foreground="{StaticResource Brush.Teal}" FontSize="10" HorizontalAlignment="Right" Margin="0,-2,0,0" />
+                                        <TextBlock Text="TIA ENGINEERING" Foreground="#F2F4F5" FontFamily="Bahnschrift, Segoe UI" FontWeight="Bold" FontSize="12.5" HorizontalAlignment="Right" />
+                                        <TextBlock Text="S T U D I O" Foreground="#AFC3DA" FontFamily="Bahnschrift, Segoe UI" FontSize="9.5" HorizontalAlignment="Right" Margin="0,-3,1,0" />
                                     </StackPanel>
-                                    <Image Source="{StaticResource Logo.Image}" Width="22" Height="22" Margin="10,0,9,0" VerticalAlignment="Center" />
+                                    <Image Source="{StaticResource Logo.Image}" Width="28" Height="28" Margin="8,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
                                     <TextBlock x:Name="TitleText" Text="{TemplateBinding Title}" Foreground="{StaticResource Brush.TextOnDark}" VerticalAlignment="Center" FontSize="12.5" TextTrimming="CharacterEllipsis" />
                                 </DockPanel>
                             </Border>

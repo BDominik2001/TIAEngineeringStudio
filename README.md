@@ -1,4 +1,4 @@
-<img src="docs/assets/logo-256.png" alt="TIA Engineering Studio logó" width="96" align="right" />
+<img src="docs/assets/brand/logo-app.png" alt="TIA Engineering Studio logó" width="140" align="right" />
 
 # TIA Engineering Studio
 
@@ -66,15 +66,17 @@ Minden vezérlő saját sablont kap (`src/TiaStudio.Desktop/Themes/PortalTheme.x
 görgetősávok, folyamatjelző és a megerősítő/hibaablak (`ThemedDialog`) is. A felső sáv a munkafolyamat
 lépéseit mutatja (kész: türkiz, aktuális: narancs, hibás: piros).
 
-Indításkor a nyitóképen a logó funkcióblokkja „kirajzolódik”, majd a logó felcsúszik és beúszik a
-szoftver neve; ezután a nyitókép finoman elhalványul, és megjelenik a kezdőlap. Ha a Windows animációi
-ki vannak kapcsolva, a sorozat gyorsítva fut; `--no-splash` kapcsolóval kihagyható.
+Indításkor a nyitóképen előbb a logó ikonja ugrik be és felragyog, majd felcsúszik és átúszik a
+teljes logóba, amelynek felirata (TIA / ENGINEERING / STUDIO) fentről lefelé tárul fel; ezután a
+nyitókép finoman elhalványul, és megjelenik a kezdőlap. Ha a Windows animációi ki vannak kapcsolva, a
+sorozat gyorsítva fut; `--no-splash` kapcsolóval kihagyható.
 
 Képernyőképek: `TiaStudio.Desktop.exe --screenshot <mappa> [--demo examples\machine-v18.json]`
 ideiglenes mappákkal minden szekciót PNG-be ment (TIA Portalt nem indít). A CI Windows-jobja ezt
 minden pushnál lefuttatja; a képek a `ui-screenshots` ágon és a `ui-screenshots` artifactban
-érhetők el. A logó forrása `docs/assets/logo.svg`, a PNG/ICO változatokat a
-`scripts/tools/render_logo.py` állítja elő.
+érhetők el. A logóváltozatok (keretes, körvonalas és keret nélküli
+ikon, teljes logó, app-ikon) a `docs/assets/brand` mappában vannak; az alkalmazásikont (`app.ico`) és a
+felület képeit a `scripts/tools/build_brand_assets.py` állítja elő belőlük.
 
 ## Gyors kezdés (Windows)
 

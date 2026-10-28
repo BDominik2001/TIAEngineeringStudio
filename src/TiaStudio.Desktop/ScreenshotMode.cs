@@ -60,12 +60,14 @@ namespace TiaStudio.Desktop
             Directory.CreateDirectory(options.ScreenshotDirectory);
             SplashWindow splash = new SplashWindow();
             splash.Show();
-            splash.ShowFrame(TimeSpan.FromSeconds(1.2));
-            Pump(300);
-            Capture(splash, splash.Width, splash.Height, Path.Combine(options.ScreenshotDirectory, "00-splash-logo.png"));
-            splash.ShowFrame(TimeSpan.FromSeconds(3.2));
-            Pump(300);
-            Capture(splash, splash.Width, splash.Height, Path.Combine(options.ScreenshotDirectory, "01-splash.png"));
+            string[] frames = { "00-splash-icon.png", "01-splash-transition.png", "02-splash.png" };
+            double[] seconds = { 1.3, 2.25, 3.25 };
+            for (int i = 0; i < frames.Length; i++)
+            {
+                splash.ShowFrame(TimeSpan.FromSeconds(seconds[i]));
+                Pump(300);
+                Capture(splash, splash.Width, splash.Height, Path.Combine(options.ScreenshotDirectory, frames[i]));
+            }
             splash.Close();
 
             string temp = Path.Combine(Path.GetTempPath(), "tes-screens-" + Guid.NewGuid().ToString("N"));
@@ -91,7 +93,7 @@ namespace TiaStudio.Desktop
             viewModel.Library.NewLibraryName = "Motor_Library";
             viewModel.Library.NewLibraryDescription = "Motor- és szelepvezérlő blokkok";
             Execute(viewModel.Library.CreateLibraryCommand);
-            Capture(window, Width, Height, Path.Combine(options.ScreenshotDirectory, "02-start.png"));
+            Capture(window, Width, Height, Path.Combine(options.ScreenshotDirectory, "03-start.png"));
 
             if (options.DemoProject != null)
             {
@@ -113,7 +115,7 @@ namespace TiaStudio.Desktop
             {
                 viewModel.SelectedSection = section;
                 Pump(400);
-                Capture(window, Width, Height, Path.Combine(options.ScreenshotDirectory, (section + 3).ToString("00") + "-" + names[section] + ".png"));
+                Capture(window, Width, Height, Path.Combine(options.ScreenshotDirectory, (section + 4).ToString("00") + "-" + names[section] + ".png"));
             }
 
             window.Close();
