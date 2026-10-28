@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tia-engineering-studio.local/contracts/block-library/1.0",
+  "title": "Blokk-könyvtár indexe (library.json, library_format_version 1.0)",
+  "description": "<library_root>/<name>/library.json; elemfájlok: items/<block_name>/r<revision>/<block_name>.scl|.db|.udt|.xml. Elemfájl soha nem íródik felül; minden export új revízió.",
+  "type": "object",
+  "required": [
+    "library_format_version",
+    "library_id",
+    "name",
+    "created_at_utc",
+    "items"
+  ],
+  "properties": {
+    "library_format_version": {
+      "const": "1.0"
+    },
+    "library_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_\\-]{0,63}$"
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 200
+    },
+    "created_at_utc": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "required": [
+        "item_id",
+        "block_name",
+        "block_type",
+        "revision",
+        "format",
+        "source_tia_version",
+        "relative_path",
+        "sha256",
+        "byte_length"
+      ],
+      "properties": {
+        "item_id": {
+          "type": "string"
+        },
+        "block_name": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,124}$"
+        },
+        "block_type": {
+          "enum": [
+            "FB",
+            "FC",
+            "DB",
+            "UDT"
+          ],
+          "description": "OB, safety (F-) és know-how védett blokk nem tárolható."
+        },
+        "db_kind": {
+          "enum": [
+            "Global",
+            "Instance",
+            "Array",
+            null
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "format": {
+          "enum": [
+            "external_source",
+            "simaticml"
+          ]
+        },
+        "source_tia_version": {
+          "enum": [
+            "V18",
+            "V19",
+            "V20"
+          ]
+        },
+        "programming_language": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "relative_path": {
+          "type": "string",
+          "description": "Pontosan items/<block_name>/r<revision>/<block_name><ext>"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "added_at_utc": {
+          "type": "string"
+        },
+        "added_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "origin": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "project_file": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "plc_name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "job_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

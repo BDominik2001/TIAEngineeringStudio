@@ -230,6 +230,16 @@ namespace TiaStudio.IntegrationTests
                 return Task.FromResult(result);
             }
 
+            public Task<TiaResult> ListBlocksAsync(TiaJobRequest request, CancellationToken cancellationToken)
+            {
+                throw new NotSupportedException();
+            }
+
+            public Task<TiaResult> ExportBlocksAsync(TiaJobRequest request, CancellationToken cancellationToken)
+            {
+                throw new NotSupportedException();
+            }
+
             private TiaResult Check(TiaCommand command, string status, string state)
             {
                 Assert.Null(SandboxRules.Check(command.ProjectPath, command.TiaVersion, command.SandboxRoot));

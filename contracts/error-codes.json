@@ -1,6 +1,6 @@
 {
   "$comment": "Közös hibatipológia (spec 10.1/15). A C#, Python és Rust komponensek kizárólag az itt felsorolt kódokat adhatják vissza. Új kód felvétele = contracts verziónövelés.",
-  "error_codes_version": "1.0",
+  "error_codes_version": "1.1",
   "codes": {
     "INVALID_JSON": { "category": "input", "message_hu": "A bemenet nem érvényes UTF-8 JSON." },
     "INPUT_TOO_LARGE": { "category": "input", "message_hu": "A bemenet mérete meghaladja a megengedett korlátot." },
@@ -57,6 +57,15 @@
     "BLOCK_COLLISION": { "category": "project", "message_hu": "Generált blokknév már létezik a PLC-ben (alcsoportokat is beleértve)." },
     "IMPORT_FAILED": { "category": "project", "message_hu": "A külső forrás importja vagy a blokkgenerálás sikertelen." },
     "COMPILE_ERROR": { "category": "project", "message_hu": "Az offline fordítás hibát jelzett." },
+
+    "LIBRARY_INVALID": { "category": "library", "message_hu": "A blokk-könyvtár (library.json vagy elemfájl) hiányzik, sérült vagy nem támogatott verziójú." },
+    "LIBRARY_EXISTS": { "category": "library", "message_hu": "Ilyen nevű blokk-könyvtár már létezik." },
+    "LIBRARY_ITEM_NOT_FOUND": { "category": "library", "message_hu": "A kért könyvtárelem nem található." },
+    "LIBRARY_ITEM_NOT_ALLOWED": { "category": "library", "message_hu": "A blokk nem vehető fel a könyvtárba / nem importálható (OB, safety, know-how védett, nem támogatott nyelv vagy név)." },
+    "LIBRARY_VERSION_MISMATCH": { "category": "library", "message_hu": "SimaticML elem csak abba a TIA-verzióba importálható, amelyből exportálták." },
+    "LIBRARY_DUPLICATE_BLOCK": { "category": "library", "message_hu": "Ugyanaz a blokknév többször szerepel az importválasztásban." },
+    "BLOCK_NOT_FOUND": { "category": "project", "message_hu": "Az exportálandó blokk nem található a PLC-ben." },
+    "EXPORT_FAILED": { "category": "project", "message_hu": "A blokk exportja (SCL-forrás vagy SimaticML) sikertelen." },
 
     "TIMEOUT": { "category": "runtime", "message_hu": "Időtúllépés; a sandbox állapota ismeretlen (UNKNOWN)." },
     "WORKER_CRASHED": { "category": "runtime", "message_hu": "A worker folyamat váratlanul leállt; a sandbox állapota ismeretlen." },

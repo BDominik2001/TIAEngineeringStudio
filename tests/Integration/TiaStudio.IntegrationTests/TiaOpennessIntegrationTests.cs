@@ -7,6 +7,7 @@ using TiaStudio.Application.Ports;
 using TiaStudio.Contracts;
 using TiaStudio.Contracts.Integrity;
 using TiaStudio.Infrastructure.Generator;
+using TiaStudio.Infrastructure.Library;
 using TiaStudio.Infrastructure.Platform;
 using TiaStudio.Infrastructure.Sandbox;
 using TiaStudio.Infrastructure.Tia;
@@ -135,6 +136,56 @@ namespace TiaStudio.IntegrationTests
             File.AppendAllText(fc, "// tampered\r\n");
             TiaResult tampered = await client.ValidateJobAsync(new TiaJobRequest(Command(copy, package, TiaOperations.ValidateJob, true), TimeSpan.FromMinutes(10)), CancellationToken.None);
             Assert.Equal(ErrorCodes.HashMismatch, tampered.ErrorCode);
+        }
+
+        /// <summary>
+        /// Blokk-könyvtár körutazás valódi TIA-val: generált blokkok importja sandbox A-ba, export a
+        /// könyvtárba (SCL forrás + SimaticML), majd import a könyvtárból egy friss sandbox B-be.
+        /// </summary>
+        [SkippableFact]
+        public async Task LibraryRoundTripForConfiguredVersion()
+        {
+            RequireTia();
+            TiaWorkerProcessClient client = Client();
+            SandboxService sandbox = new SandboxService(Path.Combine(temp, "sandbox"), new SystemClock(), new EnvironmentUserContext());
+            GenerationResult package = await Generate();
+
+            SandboxCopy source = sandbox.CreateSandboxCopy(knownGood, version);
+            TiaCommand import = Command(source, package, TiaOperations.ImportAndCompile, false);
+            Approve(import);
+            Assert.Equal(TiaJobStatus.Success, (await client.ImportAndCompileAsync(new TiaJobRequest(import, TimeSpan.FromMinutes(30)), CancellationToken.None)).Status);
+
+            TiaCommand list = Command(source, package, TiaOperations.ListBlocks, true);
+            TiaResult listed = await client.ListBlocksAsync(new TiaJobRequest(list, TimeSpan.FromMinutes(10)), CancellationToken.None);
+            Assert.Equal(TiaJobStatus.Success, listed.Status);
+            Assert.Contains(BlockFormats.ExternalSource, listed.Blocks.Single(b => b.Name == "FB_Cylinder").ExportableFormats);
+
+            string exportDir = Path.Combine(temp, "export");
+            Directory.CreateDirectory(exportDir);
+            TiaCommand export = Command(source, package, TiaOperations.ExportBlocks, true);
+            export.ExportDirectory = exportDir;
+            export.ExportBlocks = new System.Collections.Generic.List<ExportRequestItem>
+            {
+                new ExportRequestItem { BlockName = "FB_Cylinder", Format = BlockFormats.ExternalSource },
+                new ExportRequestItem { BlockName = "DB_Cylinder_CYL_01", Format = BlockFormats.SimaticMl },
+                new ExportRequestItem { BlockName = "FC_Cylinders", Format = BlockFormats.SimaticMl },
+            };
+            TiaResult exported = await client.ExportBlocksAsync(new TiaJobRequest(export, TimeSpan.FromMinutes(10)), CancellationToken.None);
+            Assert.True(exported.Status == TiaJobStatus.Success, string.Join("\n", exported.Messages));
+
+            FileBlockLibraryStore store = new FileBlockLibraryStore(Path.Combine(temp, "libraries"), new SystemClock(), new EnvironmentUserContext());
+            store.Create("RoundTrip", null);
+            System.Collections.Generic.IReadOnlyList<BlockLibraryItem> items = store.AddExportedBlocks("RoundTrip", exportDir, exported.ExportedFiles, version, null, null);
+            Assert.Empty(store.Verify("RoundTrip"));
+
+            SandboxCopy target = sandbox.CreateSandboxCopy(knownGood, version);
+            LibraryImportSelection selection = new LibraryImportSelection { LibraryName = "RoundTrip", TargetTiaVersion = version, PlcName = plcName, ItemIds = items.Select(i => i.ItemId).ToList() };
+            GenerationResult libraryPackage = store.BuildImportPackage(selection, items, Path.Combine(temp, "library-package"), "it", new string('0', 64), null);
+            TiaCommand libraryImport = Command(target, libraryPackage, TiaOperations.ImportAndCompile, false);
+            Approve(libraryImport);
+            TiaResult result = await client.ImportAndCompileAsync(new TiaJobRequest(libraryImport, TimeSpan.FromMinutes(30)), CancellationToken.None);
+            Assert.True(result.Status == TiaJobStatus.Success, string.Join("\n", result.Messages));
+            Assert.Equal(SandboxStates.Saved, result.SandboxState);
         }
 
         [SkippableFact]

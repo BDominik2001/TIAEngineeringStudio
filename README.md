@@ -21,6 +21,7 @@ A teljes követelményrendszer: [`TIA_Engineering_Studio_TIA_V18_V19_V20_Projekt
 | C# Domain / Contracts / Application (állapotgép, jóváhagyás) / Infrastructure | kész, unit- és integrációs tesztekkel |
 | Worker-logika (TiaAdapter.Common): előfeltételek, sandbox, hash, jóváhagyás, rekurzív ütközésvizsgálat | kész, hamis Openness-backenddel tesztelve |
 | V18/V19/V20 worker + V18 API-szintű Openness-implementáció | megírva; **valódi TIA Portallal még nincs igazolva** |
+| Blokk-könyvtárak: export projektből (SCL-forrás / SimaticML), import a jóváhagyási láncon | kész, hamis Openness-backenddel tesztelve; valódi TIA-val igazolandó |
 | WPF Desktop | megírva; a XAML csak Windows alatt fordul (CI: `windows-latest`) |
 
 **Fontos:** a V18/V19/V20 Openness-integráció a spec 11.4 szerint csak akkor tekinthető
@@ -31,7 +32,7 @@ ilyen eredmény; a felület ezért a telepített verziókat `Not tested` állapo
 ## Szerkezet
 
 ```text
-contracts/            JSON-sémák (gépmodell, worker-parancs/-eredmény, manifest), error-codes.json
+contracts/            JSON-sémák (gépmodell, worker-parancs/-eredmény, manifest, blokk-könyvtár), error-codes.json
 examples/             machine-v18.json, machine-v19.json, machine-v20.json
 python/generator/     SCL-generátor (Python 3.9+, külső függőség nélkül) + templates/
 rust/tes_validator/   determinisztikus validátor, natív x64 DLL (C ABI)
@@ -102,4 +103,4 @@ Bármely hiba `FAILED`; onnan csak újrakezdés (DRAFT) vezet tovább. Részlete
 - [Architektúra](docs/ARCHITECTURE.md) · [API-szerződések](docs/API_CONTRACTS.md) · [Validációs szabályok](docs/VALIDATION_RULES.md)
 - [Biztonsági szabályok](docs/SECURITY_RULES.md) · [Kompatibilitási mátrix](docs/COMPATIBILITY_MATRIX.md)
 - [TIA V18](docs/TIA_V18.md) · [TIA V19](docs/TIA_V19.md) · [TIA V20](docs/TIA_V20.md)
-- [Üzemeltetés](docs/OPERATIONS.md) · [Ütemterv és döntési napló](docs/ROADMAP.md)
+- [Blokk-könyvtárak](docs/BLOCK_LIBRARY.md) · [Üzemeltetés](docs/OPERATIONS.md) · [Ütemterv és döntési napló](docs/ROADMAP.md)

@@ -64,6 +64,24 @@ namespace TiaStudio.Infrastructure.Tia
             return RunAsync(request, cancellationToken);
         }
 
+        public Task<TiaResult> ListBlocksAsync(TiaJobRequest request, CancellationToken cancellationToken)
+        {
+            if (request.Command.Operation != TiaOperations.ListBlocks)
+            {
+                throw new ArgumentException("ListBlocks requires operation ListBlocks");
+            }
+            return RunAsync(request, cancellationToken);
+        }
+
+        public Task<TiaResult> ExportBlocksAsync(TiaJobRequest request, CancellationToken cancellationToken)
+        {
+            if (request.Command.Operation != TiaOperations.ExportBlocks)
+            {
+                throw new ArgumentException("ExportBlocks requires operation ExportBlocks");
+            }
+            return RunAsync(request, cancellationToken);
+        }
+
         private async Task<TiaResult> RunAsync(TiaJobRequest request, CancellationToken cancellationToken)
         {
             TiaCommand command = request.Command;

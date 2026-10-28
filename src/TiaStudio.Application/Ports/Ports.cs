@@ -94,6 +94,89 @@ namespace TiaStudio.Application.Ports
         Task<TiaResult> ValidateJobAsync(TiaJobRequest request, CancellationToken cancellationToken);
 
         Task<TiaResult> ImportAndCompileAsync(TiaJobRequest request, CancellationToken cancellationToken);
+
+        /// <summary>Csak olvasó: a sandbox-projekt PLC-jének blokkjai.</summary>
+        Task<TiaResult> ListBlocksAsync(TiaJobRequest request, CancellationToken cancellationToken);
+
+        /// <summary>Csak olvasó: kijelölt blokkok exportja az export_directory mappába.</summary>
+        Task<TiaResult> ExportBlocksAsync(TiaJobRequest request, CancellationToken cancellationToken);
+    }
+
+    /// <summary>Könyvtárművelet hibája stabil hibakóddal.</summary>
+    public sealed class BlockLibraryException : Exception
+    {
+        public BlockLibraryException(string errorCode, string message)
+            : base(message)
+        {
+            ErrorCode = errorCode;
+        }
+
+        public string ErrorCode { get; }
+    }
+
+    public sealed class BlockLibrarySummary
+    {
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public int ItemCount { get; set; }
+
+        /// <summary>null = a library.json betölthető; különben a hiba leírása.</summary>
+        public string Problem { get; set; }
+    }
+
+    /// <summary>Mely könyvtárelemek importálandók melyik célverzióba és PLC-be.</summary>
+    public sealed class LibraryImportSelection
+    {
+        public string LibraryName { get; set; }
+
+        public List<string> ItemIds { get; set; } = new List<string>();
+
+        public string TargetTiaVersion { get; set; }
+
+        public string PlcName { get; set; }
+    }
+
+    /// <summary>
+    /// Verziófüggetlen blokk-könyvtárak tárolása (contracts/block-library.schema.json):
+    /// &lt;root&gt;\&lt;név&gt;\library.json + items\&lt;blokk&gt;\r&lt;revízió&gt;\fájl. Elemfájlt soha nem ír felül.
+    /// </summary>
+    public interface IBlockLibraryStore
+    {
+        string LibraryRoot { get; }
+
+        IReadOnlyList<BlockLibrarySummary> ListLibraries();
+
+        BlockLibraryIndex Create(string name, string description);
+
+        /// <summary>BlockLibraryException(LIBRARY_INVALID), ha nem létezik vagy sérült.</summary>
+        BlockLibraryIndex Load(string name);
+
+        /// <summary>Teljes integritás-ellenőrzés: útvonalak, SHA-256, bájthossz, elemszabályok. Üres = rendben.</summary>
+        IReadOnlyList<TiaMessage> Verify(string name);
+
+        /// <summary>Worker-exportból új revíziók felvétele; minden fájl hash-e újramérve.</summary>
+        IReadOnlyList<BlockLibraryItem> AddExportedBlocks(
+            string name,
+            string exportDirectory,
+            IReadOnlyList<ExportedBlockFile> files,
+            string sourceTiaVersion,
+            BlockLibraryOrigin origin,
+            string description);
+
+        void RemoveItem(string name, string itemId);
+
+        string ItemPath(string name, BlockLibraryItem item);
+
+        /// <summary>Importcsomag (manifest 1.1, package_kind = library_import) összeállítása egy új mappába.</summary>
+        GenerationResult BuildImportPackage(
+            LibraryImportSelection selection,
+            IReadOnlyList<BlockLibraryItem> items,
+            string outputDirectory,
+            string runId,
+            string selectionSha256,
+            ValidationReport validation);
     }
 
     public sealed class SandboxCopy

@@ -23,6 +23,10 @@ Jelmagyarázat: ✅ igazolt (dátum, gép, TIA Update a naplóban) · ⏳ nem fu
 | Verzióhibás `.apXX` elutasítása | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `ProjectExtensionMismatchIsRejected`, `WrongProjectVersionIsRejected` |
 | PLC-letöltés hiánya | ✅ (protokoll) | ✅ (protokoll) | ✅ (protokoll) | `ProtocolHasNoDownloadOnlineOrForceOperation`, `DownloadOperationDoesNotExist` |
 | Hibából napló + kontrollált leállás | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `CompileErrorFailsWithoutSaving`, `ImportFailureStopsAndDoesNotSave` |
+| Blokklista (ListBlocks) | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `ListBlocksReportsExportability`, `LibraryRoundTripForConfiguredVersion` |
+| Export SCL-forrás / SimaticML a könyvtárba | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `ExportWritesHashedFilesWithoutSaving`, `LibraryRoundTripForConfiguredVersion` |
+| Import a könyvtárból (SCL + SimaticML) + fordítás | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `LibraryPackageImportUsesFormatPerFile`, `LibraryRoundTripForConfiguredVersion` |
+| Más verzióból származó SCL-forrás importja | ⏳ | ⏳ | ⏳ | kézi: pl. V20-ból exportált SCL → V18 sandbox |
 
 ## Futtatási napló
 
@@ -45,6 +49,9 @@ futásnál ellenőrizendő:
 7. A generált SCL (`TON_TIME` multi-instance, abszolút `%I` címzés optimalizált FC-ben, `REGION`) fordul-e S7-1200 és S7-1500 CPU-n; létrehoz-e a TIA automatikus tag-bejegyzéseket az abszolút címekhez.
 8. A licenc-, UMAC- és frissítési hibák tényleges kivételtípusai/üzenetei (`OpennessErrorClassifier`).
 9. `[STAThread]` szükségessége `WithoutUserInterface` módban.
+10. Blokk-könyvtár: `PlcExternalSourceSystemGroup.GenerateSource(IEnumerable<IGenerateSource>, FileInfo, GenerateOptions)` megléte V18-ban, és hogy a `GenerateOptions.None` valóban csak a kért blokkot írja-e ki; elvárt-e a `.scl`/`.db`/`.udt` kiterjesztés; ír-e UTF-8 BOM-ot (a BOM megengedett).
+11. `PlcBlock.Export` / `PlcType.Export` (`ExportOptions.WithDefaults`), `PlcBlockComposition.Import` / `PlcTypeComposition.Import` (`ImportOptions.None`) viselkedése meglévő névnél; `PlcBlockComposition.Find` / `PlcTypeComposition.Find` megléte.
+12. `PlcType.IsKnowHowProtected`, `PlcType.IsConsistent`, `PlcBlock.IsConsistent`, a `GlobalDB`/`InstanceDB`/`ArrayDB` osztálynevek, és a `ProgrammingLanguage` enum F-értékeinek neve.
 
 Minden eltérést ide kell rögzíteni, verziónként külön sorban.
 

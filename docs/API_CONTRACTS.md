@@ -6,10 +6,11 @@ protokoll-/sémaverzió-növelés és migrációs teszt kötelező (spec 10.2).
 | Szerződés | Fájl | Verzió |
 |---|---|---|
 | Gépmodell | `contracts/machine-project.schema.json` + `docs/VALIDATION_RULES.md` | `schema_version` 1.1 |
-| Worker-parancs | `contracts/tia-command.schema.json` | `protocol_version` 1.0 |
-| Worker-eredmény | `contracts/tia-result.schema.json` | `protocol_version` 1.0 |
-| Generálási manifest | `contracts/generation-manifest.schema.json` | `manifest_version` 1.0 |
-| Hibakódok | `contracts/error-codes.json` | `error_codes_version` 1.0 |
+| Worker-parancs | `contracts/tia-command.schema.json` | `protocol_version` 1.1 (1.0 is elfogadott) |
+| Worker-eredmény | `contracts/tia-result.schema.json` | `protocol_version` 1.1 |
+| Generálási / importcsomag-manifest | `contracts/generation-manifest.schema.json` | `manifest_version` 1.0 (generátor), 1.1 (könyvtárimport) |
+| Blokk-könyvtár index | `contracts/block-library.schema.json` (`library.json`) | `library_format_version` 1.0 |
+| Hibakódok | `contracts/error-codes.json` | `error_codes_version` 1.1 |
 | Rust FFI | `rust/tes_validator/include/tes_validator.h` | ABI 1 |
 | Sandbox-marker | `.tes-sandbox.json` (`TiaStudio.Contracts.SandboxMarker`) | `marker_version` 1.0 |
 
@@ -25,7 +26,9 @@ vagy a `job_id`/verzió nem egyezik, `WORKER_CRASHED` / `WORKER_VERSION_MISMATCH
 sandbox állapota `Unknown`.
 
 Műveletek: `GetCapabilities`, `ValidateJob` (mindig `dry_run=true`), `ImportAndCompile`,
-`UpgradeProject` (MVP-ben mindig `Unsupported`). Letöltés/online/force művelet a protokollban **nem létezik**;
+`UpgradeProject` (MVP-ben mindig `Unsupported`), valamint 1.1-től a csak olvasó `ListBlocks`
+(`blocks` eredmény) és `ExportBlocks` (`export_directory` + `export_blocks` → `exported_files`; a
+projektet nem menti). Mindkettő csak sandbox-projekten fut; részletek: [BLOCK_LIBRARY.md](BLOCK_LIBRARY.md). Letöltés/online/force művelet a protokollban **nem létezik**;
 ismeretlen művelet `OPERATION_NOT_SUPPORTED`.
 
 ### `sandbox_state`
@@ -56,6 +59,14 @@ file=<import_order>:<relative_path>:<sha256>      (import_order szerint, fájlon
 
 Sortörést tartalmazó mező elutasítva. A digest a jóváhagyáskor új `job_id`-hoz készül, így egy
 jóváhagyás egyetlen futtatási kérelemre érvényes. A worker a hash-eket maga méri újra.
+
+## Manifest 1.1 (könyvtárimport)
+
+A 1.0-hoz képest: `package_kind` (`generated` | `library_import`), fájlonkénti `format`
+(`external_source` | `simaticml`; hiányzó = `external_source`), `generator = tes_library`,
+`schema_version` és `cpu_family` lehet `null`, `encoding` `utf-8` is lehet, `line_ending = as-exported`.
+1.0-s manifestben `package_kind` és `format` tilos. A worker SimaticML-fájlt `Blocks.Import`/`Types.Import`-tal,
+a többit külső forrásként importál; az ASCII-szabály csak a külső forrásokra vonatkozik.
 
 ## Manifest-útvonalszabály
 

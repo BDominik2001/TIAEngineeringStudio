@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using TiaStudio.Application.Library;
 using TiaStudio.Application.Ports;
 using TiaStudio.Application.Workflow;
 using TiaStudio.Contracts;
@@ -122,7 +123,8 @@ namespace TiaStudio.Desktop.ViewModels
             IMachineProjectSerializer serializer,
             IModelValidator modelValidator,
             IDialogService dialogs,
-            Action<Action<string>> subscribeAuditLines)
+            Action<Action<string>> subscribeAuditLines,
+            BlockLibraryService libraryService = null)
         {
             this.workflow = workflow;
             this.workerClient = workerClient;
@@ -182,7 +184,29 @@ namespace TiaStudio.Desktop.ViewModels
 
             NewProject();
             RefreshInstallations();
+            if (libraryService != null)
+            {
+                Library = new LibraryViewModel(libraryService, workflow, sandbox, dialogs, RunStepAsync, Show, () => IsBusy, OnUnhandled);
+            }
         }
+
+        /// <summary>Blokk-könyvtárak fül (null, ha nincs könyvtártár konfigurálva).</summary>
+        public LibraryViewModel Library { get; }
+
+        /// <summary>A munkafolyamat célverziója: könyvtár-módban a választásé, egyébként a gépmodellé.</summary>
+        public string EffectiveTiaVersion => workflow.InputKind == WorkflowInputKind.Library ? workflow.TiaVersion : TiaVersion;
+
+        public string EffectivePlcName => workflow.InputKind == WorkflowInputKind.Library ? workflow.PlcName : PlcName;
+
+        public string InputText => workflow.InputKind == WorkflowInputKind.Library && workflow.LibrarySelection != null
+            ? "könyvtár " + workflow.LibrarySelection.LibraryName + " (" + workflow.LibrarySelection.ItemIds.Count + " elem)"
+            : "gépmodell";
+
+        public string ValidateLabel => workflow.InputKind == WorkflowInputKind.Library ? "1) Könyvtárválasztás ellenőrzése" : "1) Séma- és modellellenőrzés";
+
+        public string CheckLabel => workflow.InputKind == WorkflowInputKind.Library ? "2) Elem-hashek újraellenőrzése" : "2) Statikus ellenőrzés (Rust)";
+
+        public string GenerateLabel => workflow.InputKind == WorkflowInputKind.Library ? "3) Importcsomag összeállítása" : "3) SCL generálás (Python)";
 
         public IReadOnlyList<string> TiaVersionOptions => TiaVersions.Supported;
 
@@ -261,7 +285,7 @@ namespace TiaStudio.Desktop.ViewModels
             }
         }
 
-        public string ProjectExtension => TiaVersions.ProjectExtension(TiaVersion);
+        public string ProjectExtension => TiaVersions.ProjectExtension(EffectiveTiaVersion);
 
         public string PlcName { get => plcName; set { if (Set(ref plcName, value?.Trim())) { ModelEdited(); } } }
 
@@ -429,7 +453,8 @@ namespace TiaStudio.Desktop.ViewModels
                 return;
             }
             modelDirty = true;
-            if (workflow.Project != null && workflow.State != WorkflowState.Draft)
+            // Könyvtár-módból a gépmodell bármely szerkesztése visszavált gépmodell-bemenetre.
+            if (workflow.InputKind == WorkflowInputKind.Library || (workflow.Project != null && workflow.State != WorkflowState.Draft))
             {
                 workflow.SetProject(BuildProject());
                 modelDirty = false;
@@ -439,7 +464,7 @@ namespace TiaStudio.Desktop.ViewModels
 
         private void Validate()
         {
-            if (modelDirty || workflow.Project == null)
+            if (workflow.InputKind != WorkflowInputKind.Library && (modelDirty || workflow.Project == null))
             {
                 workflow.SetProject(BuildProject());
                 modelDirty = false;
@@ -449,11 +474,12 @@ namespace TiaStudio.Desktop.ViewModels
 
         private void BrowseSandboxProject()
         {
-            string extension = TiaVersions.ProjectExtension(TiaVersion);
-            string path = dialogs.OpenFile("Sandbox TIA-projekt (" + TiaVersion + ")", "TIA Portal " + TiaVersion + " projekt (*" + extension + ")|*" + extension);
+            string version = EffectiveTiaVersion;
+            string extension = TiaVersions.ProjectExtension(version);
+            string path = dialogs.OpenFile("Sandbox TIA-projekt (" + version + ")", "TIA Portal " + version + " projekt (*" + extension + ")|*" + extension);
             if (path != null)
             {
-                Tuple<string, string> problem = sandbox.Verify(path, TiaVersion);
+                Tuple<string, string> problem = sandbox.Verify(path, version);
                 SandboxProjectPath = problem == null ? path : null;
                 StatusMessage = problem == null ? "Sandbox projekt kiválasztva." : problem.Item1 + ": " + problem.Item2;
             }
@@ -461,8 +487,9 @@ namespace TiaStudio.Desktop.ViewModels
 
         private void BrowseKnownGoodProject()
         {
-            string extension = TiaVersions.ProjectExtension(TiaVersion);
-            string path = dialogs.OpenFile("Ismert jó (forrás) TIA-projekt – nem módosul", "TIA Portal " + TiaVersion + " projekt (*" + extension + ")|*" + extension);
+            string version = EffectiveTiaVersion;
+            string extension = TiaVersions.ProjectExtension(version);
+            string path = dialogs.OpenFile("Ismert jó (forrás) TIA-projekt – nem módosul", "TIA Portal " + version + " projekt (*" + extension + ")|*" + extension);
             if (path != null)
             {
                 KnownGoodProjectPath = path;
@@ -477,7 +504,7 @@ namespace TiaStudio.Desktop.ViewModels
             }
             try
             {
-                SandboxCopy copy = sandbox.CreateSandboxCopy(KnownGoodProjectPath, TiaVersion);
+                SandboxCopy copy = sandbox.CreateSandboxCopy(KnownGoodProjectPath, TiaVersions.FromProjectPath(KnownGoodProjectPath) ?? EffectiveTiaVersion);
                 SandboxProjectPath = copy.ProjectPath;
                 StatusMessage = "Sandbox létrehozva: " + copy.ProjectPath;
             }
@@ -489,8 +516,8 @@ namespace TiaStudio.Desktop.ViewModels
 
         private void Approve()
         {
-            string message = "Jóváhagyod a(z) " + GeneratedFiles.Count + " generált forrás importját?\n\n" +
-                             "Célverzió: TIA Portal " + TiaVersion + "\nPLC: " + PlcName + "\nSandbox: " + SandboxProjectPath + "\n\n" +
+            string message = "Jóváhagyod a(z) " + GeneratedFiles.Count + " forrásfájl importját?\n\n" +
+                             "Forrás: " + InputText + "\nCélverzió: TIA Portal " + EffectiveTiaVersion + "\nPLC: " + EffectivePlcName + "\nSandbox: " + SandboxProjectPath + "\n\n" +
                              "A jóváhagyás ehhez a projektútvonalhoz és a forrásfájlok mostani SHA-256 hash-éhez kötött. " +
                              "A generált kódot a gép dokumentációja és kockázatértékelése alapján mérnöknek kell ellenőriznie.";
             if (dialogs.Confirm("Jóváhagyás", message))
@@ -518,8 +545,8 @@ namespace TiaStudio.Desktop.ViewModels
             IsBusy = true;
             try
             {
-                TiaResult result = await workerClient.GetCapabilitiesAsync(TiaVersion, CancellationToken.None);
-                List<string> lines = new List<string> { "Worker " + TiaVersion + ": " + result.Status + (result.ErrorCode == null ? string.Empty : " (" + result.ErrorCode + ")") };
+                TiaResult result = await workerClient.GetCapabilitiesAsync(EffectiveTiaVersion, CancellationToken.None);
+                List<string> lines = new List<string> { "Worker " + EffectiveTiaVersion + ": " + result.Status + (result.ErrorCode == null ? string.Empty : " (" + result.ErrorCode + ")") };
                 if (result.Worker != null)
                 {
                     lines.Add("Openness linked: " + result.Worker.OpennessLinked + ", Siemens.Engineering " + result.Worker.EngineeringAssemblyVersion + " " + result.Worker.EngineeringAssemblyPath);
@@ -548,6 +575,13 @@ namespace TiaStudio.Desktop.ViewModels
         {
             OnPropertyChanged(nameof(State));
             OnPropertyChanged(nameof(StateText));
+            OnPropertyChanged(nameof(EffectiveTiaVersion));
+            OnPropertyChanged(nameof(EffectivePlcName));
+            OnPropertyChanged(nameof(ProjectExtension));
+            OnPropertyChanged(nameof(InputText));
+            OnPropertyChanged(nameof(ValidateLabel));
+            OnPropertyChanged(nameof(CheckLabel));
+            OnPropertyChanged(nameof(GenerateLabel));
             if (workflow.Package?.Manifest != null && workflow.Generation != null)
             {
                 if (GeneratedFiles.Count == 0 || GeneratedFiles[0].FullPath == null || !GeneratedFiles[0].FullPath.StartsWith(workflow.Generation.OutputDirectory, StringComparison.OrdinalIgnoreCase))
@@ -598,7 +632,7 @@ namespace TiaStudio.Desktop.ViewModels
         {
             try
             {
-                return File.ReadAllText(path, Encoding.ASCII);
+                return File.ReadAllText(path, new UTF8Encoding(false, false));
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {

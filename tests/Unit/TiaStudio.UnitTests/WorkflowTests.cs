@@ -104,6 +104,22 @@ namespace TiaStudio.UnitTests
             return Task.FromResult(result);
         }
 
+        public Func<TiaCommand, TiaResult> OnList { get; set; }
+
+        public Func<TiaCommand, TiaResult> OnExport { get; set; }
+
+        public Task<TiaResult> ListBlocksAsync(TiaJobRequest request, CancellationToken cancellationToken)
+        {
+            Commands.Add(request.Command);
+            return Task.FromResult(OnList(request.Command));
+        }
+
+        public Task<TiaResult> ExportBlocksAsync(TiaJobRequest request, CancellationToken cancellationToken)
+        {
+            Commands.Add(request.Command);
+            return Task.FromResult(OnExport(request.Command));
+        }
+
         public static TiaResult Result(TiaCommand command, string status, string code, string sandboxState, bool saved)
         {
             return new TiaResult

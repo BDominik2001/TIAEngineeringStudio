@@ -58,6 +58,15 @@ jóváhagyás-ellenőrzés), mert ezeket **azonos módon** kell kiszámolnia a f
 9. Offline fordítás (`ICompilable`), rekurzív üzenetfa lapítva; hiba esetén nincs mentés.
 10. Mentés csak teljes siker után; minden esetben eredményfájl és a TIA-példány felszabadítása.
 
+## Blokk-könyvtár
+
+`IBlockLibraryStore` (Infrastructure: `FileBlockLibraryStore`) tárolja a verziófüggetlen könyvtárakat;
+`BlockLibraryService` (Application) futtatja a csak olvasó `ListBlocks`/`ExportBlocks` worker-műveleteket;
+az import az `EngineeringWorkflow` könyvtár-módja (`SetLibrarySelection`): VALIDATED = elemszabályok és
+integritás, CHECKED = hash-újramérés, GENERATED = manifest 1.1 importcsomag, utána a megszokott lánc.
+Az export/import közös szabályai (`LibraryRules`) a Contracts-ban vannak, mert a worker is alkalmazza őket.
+Részletek: [BLOCK_LIBRARY.md](BLOCK_LIBRARY.md).
+
 ## Generált PLC-modulstratégia (spec 7.2)
 
 - `FB_Cylinder` – egyetlen közös, paraméterezett FB (végállás-kiértékelés, mindkét érzékelő aktív hiba,

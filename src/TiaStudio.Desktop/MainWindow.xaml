@@ -12,7 +12,8 @@
                 <ProgressBar DockPanel.Dock="Right" Width="120" Height="14" Margin="8,0" IsIndeterminate="{Binding IsBusy}" />
                 <TextBlock VerticalAlignment="Center">
                     <Run Text="Állapot: " /><Run Text="{Binding StateText, Mode=OneWay}" FontWeight="Bold" />
-                    <Run Text="   Cél: TIA Portal " /><Run Text="{Binding TiaVersion, Mode=OneWay}" FontWeight="Bold" />
+                    <Run Text="   Cél: TIA Portal " /><Run Text="{Binding EffectiveTiaVersion, Mode=OneWay}" FontWeight="Bold" />
+                    <Run Text="   Forrás: " /><Run Text="{Binding InputText, Mode=OneWay}" />
                     <Run Text="   " /><Run Text="{Binding StatusMessage, Mode=OneWay}" />
                 </TextBlock>
             </DockPanel>
@@ -90,9 +91,9 @@
             <TabItem Header="2. Ellenőrzés és generálás">
                 <DockPanel Margin="8">
                     <WrapPanel DockPanel.Dock="Top">
-                        <Button Content="1) Séma- és modellellenőrzés" Command="{Binding ValidateCommand}" />
-                        <Button Content="2) Statikus ellenőrzés (Rust)" Command="{Binding CheckCommand}" />
-                        <Button Content="3) SCL generálás (Python)" Command="{Binding GenerateCommand}" />
+                        <Button Content="{Binding ValidateLabel}" Command="{Binding ValidateCommand}" />
+                        <Button Content="{Binding CheckLabel}" Command="{Binding CheckCommand}" />
+                        <Button Content="{Binding GenerateLabel}" Command="{Binding GenerateCommand}" />
                         <Button Content="Újrakezdés (DRAFT)" Command="{Binding ResetCommand}" />
                     </WrapPanel>
                     <GroupBox Header="Hibák, figyelmeztetések, részletek">
@@ -209,8 +210,140 @@
                 </DockPanel>
             </TabItem>
 
-            <!-- 5. Napló -->
-            <TabItem Header="5. Napló">
+            <!-- 5. Blokk-könyvtárak -->
+            <TabItem Header="5. Blokk-könyvtárak" DataContext="{Binding Library}">
+                <Grid Margin="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="300" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Könyvtárak -->
+                    <DockPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Margin="0,0,8,0">
+                        <GroupBox DockPanel.Dock="Top" Header="Új könyvtár">
+                            <StackPanel>
+                                <TextBlock Text="Név (A-Z, 0-9, _ -):" />
+                                <TextBox Text="{Binding NewLibraryName, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,4" />
+                                <TextBlock Text="Leírás:" />
+                                <TextBox Text="{Binding NewLibraryDescription, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,6" />
+                                <Button Content="Könyvtár létrehozása" Command="{Binding CreateLibraryCommand}" HorizontalAlignment="Left" />
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox DockPanel.Dock="Top" Header="Cél / forrás">
+                            <StackPanel>
+                                <TextBlock Text="TIA-verzió (export forrása, import célja):" />
+                                <ComboBox ItemsSource="{Binding TiaVersionOptions}" SelectedItem="{Binding TiaVersion}" Margin="0,2,0,4" />
+                                <TextBlock Text="PLC-név:" />
+                                <TextBox Text="{Binding PlcName, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="Könyvtárak">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Bottom" Foreground="Gray" TextWrapping="Wrap" Margin="0,4,0,0">
+                                    <Run Text="Hely: " /><Run Text="{Binding LibraryRoot, Mode=OneWay}" />
+                                </TextBlock>
+                                <WrapPanel DockPanel.Dock="Top">
+                                    <Button Content="Frissítés" Command="{Binding RefreshLibrariesCommand}" MinWidth="70" />
+                                    <Button Content="Integritás" Command="{Binding VerifyLibraryCommand}" MinWidth="70" />
+                                </WrapPanel>
+                                <ListBox ItemsSource="{Binding Libraries}" SelectedItem="{Binding SelectedLibrary}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <TextBlock FontWeight="Bold">
+                                                    <Run Text="{Binding Name, Mode=OneWay}" /><Run Text=" (" /><Run Text="{Binding ItemCount, Mode=OneWay}" /><Run Text=" elem)" />
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Description}" Foreground="Gray" TextWrapping="Wrap" />
+                                                <TextBlock Text="{Binding Problem}" Foreground="Firebrick" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </DockPanel>
+                        </GroupBox>
+                    </DockPanel>
+
+                    <!-- Könyvtár tartalma → import -->
+                    <GroupBox Grid.Row="0" Grid.Column="1" Header="Könyvtár elemei – import a projektbe">
+                        <DockPanel>
+                            <WrapPanel DockPanel.Dock="Top">
+                                <CheckBox Content="Régi revíziók is" IsChecked="{Binding ShowAllRevisions}" VerticalAlignment="Center" Margin="0,0,12,6" />
+                                <Button Content="Kijelölt elem törlése" Command="{Binding RemoveItemCommand}" />
+                                <Button Content="Kipipáltak importjának előkészítése" Command="{Binding PrepareImportCommand}" />
+                                <TextBlock VerticalAlignment="Center" Margin="4,0,0,6" Foreground="Gray" TextWrapping="Wrap"
+                                           Text="Ezután: 2. fül → importcsomag, 3. fül → átnézés és jóváhagyás, 4. fül → száraz futás és import." />
+                            </WrapPanel>
+                            <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" AutoGenerateColumns="False"
+                                      CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="Import">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Blokk" Width="160" Binding="{Binding BlockName, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Típus" Binding="{Binding BlockType, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Rev." Binding="{Binding Revision, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Formátum" Binding="{Binding Format, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Forrás TIA" Binding="{Binding SourceTiaVersion, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Nyelv" Binding="{Binding Language, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Leírás" Width="*" Binding="{Binding Description, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Eredet" Binding="{Binding Origin, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Felvéve" Binding="{Binding Added, Mode=OneWay}" IsReadOnly="True" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </GroupBox>
+
+                    <!-- Projekt blokkjai → export -->
+                    <GroupBox Grid.Row="1" Grid.Column="1" Header="Projekt blokkjai – export a kiválasztott könyvtárba (csak olvasás, sandbox-másolatból)">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                                <Button DockPanel.Dock="Right" Content="Blokkok listázása" Command="{Binding ListBlocksCommand}" Margin="6,0,0,0" />
+                                <Button DockPanel.Dock="Right" Content="Tallózás…" Command="{Binding BrowseSourceProjectCommand}" Margin="6,0,0,0" />
+                                <TextBox Text="{Binding SourceProjectPath, Mode=OneWay}" IsReadOnly="True" ToolTip="Forrás sandbox-projekt (a célverzió kiterjesztésével)" />
+                            </DockPanel>
+                            <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                                <Button DockPanel.Dock="Right" Content="Kipipáltak exportja a könyvtárba" Command="{Binding ExportCommand}" Margin="6,0,0,0" />
+                                <TextBlock DockPanel.Dock="Left" Text="Leírás:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBox Text="{Binding ExportDescription, UpdateSourceTrigger=PropertyChanged}" />
+                            </DockPanel>
+                            <DataGrid ItemsSource="{Binding ProjectBlocks}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="Export">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanExport}" HorizontalAlignment="Center" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Blokk" Width="160" Binding="{Binding Name, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Típus" Binding="{Binding BlockType, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Nyelv" Binding="{Binding Language, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTemplateColumn Header="Formátum" Width="130">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ComboBox ItemsSource="{Binding Formats}" SelectedItem="{Binding SelectedFormat, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanExport}" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Hely" Width="200" Binding="{Binding Location, Mode=OneWay}" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Megjegyzés" Width="*" Binding="{Binding Note, Mode=OneWay}" IsReadOnly="True" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+            <!-- 6. Napló -->
+            <TabItem Header="6. Napló">
                 <ListBox Margin="8" ItemsSource="{Binding AuditLines}" FontFamily="Consolas" />
             </TabItem>
         </TabControl>

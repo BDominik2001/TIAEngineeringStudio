@@ -61,6 +61,15 @@ namespace TiaStudio.Contracts
         public const string ImportFailed = "IMPORT_FAILED";
         public const string CompileError = "COMPILE_ERROR";
 
+        public const string LibraryInvalid = "LIBRARY_INVALID";
+        public const string LibraryExists = "LIBRARY_EXISTS";
+        public const string LibraryItemNotFound = "LIBRARY_ITEM_NOT_FOUND";
+        public const string LibraryItemNotAllowed = "LIBRARY_ITEM_NOT_ALLOWED";
+        public const string LibraryVersionMismatch = "LIBRARY_VERSION_MISMATCH";
+        public const string LibraryDuplicateBlock = "LIBRARY_DUPLICATE_BLOCK";
+        public const string BlockNotFound = "BLOCK_NOT_FOUND";
+        public const string ExportFailed = "EXPORT_FAILED";
+
         public const string Timeout = "TIMEOUT";
         public const string WorkerCrashed = "WORKER_CRASHED";
         public const string Cancelled = "CANCELLED";

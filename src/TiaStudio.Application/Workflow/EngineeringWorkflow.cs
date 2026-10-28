@@ -8,7 +8,9 @@ using System.Threading.Tasks;
 using TiaStudio.Application.Ports;
 using TiaStudio.Contracts;
 using TiaStudio.Contracts.Integrity;
+using Newtonsoft.Json;
 using TiaStudio.Domain.Model;
+using TiaStudio.Domain.Rules;
 using TiaStudio.Domain.Workflow;
 
 namespace TiaStudio.Application.Workflow
@@ -18,6 +20,14 @@ namespace TiaStudio.Application.Workflow
         public TimeSpan DryRunTimeout { get; set; } = TimeSpan.FromMinutes(15);
 
         public TimeSpan ImportTimeout { get; set; } = TimeSpan.FromMinutes(45);
+    }
+
+    /// <summary>Mi a munkafolyamat bemenete: gépmodell (Python-generálás) vagy könyvtárválasztás.</summary>
+    public enum WorkflowInputKind
+    {
+        None,
+        MachineModel,
+        Library,
     }
 
     public sealed class StepResult
@@ -63,6 +73,7 @@ namespace TiaStudio.Application.Workflow
     public sealed class EngineeringWorkflow
     {
         private const string InputFileName = "machine-project.json";
+        private const string LibraryInputFileName = "library-selection.json";
 
         private readonly IMachineProjectSerializer serializer;
         private readonly IModelValidator modelValidator;
@@ -75,6 +86,8 @@ namespace TiaStudio.Application.Workflow
         private readonly IUserContext user;
         private readonly IWorkspace workspace;
         private readonly WorkflowOptions options;
+        private readonly IBlockLibraryStore libraries;
+        private List<BlockLibraryItem> selectedItems = new List<BlockLibraryItem>();
         private int busy;
 
         public EngineeringWorkflow(
@@ -88,7 +101,8 @@ namespace TiaStudio.Application.Workflow
             IClock clock,
             IUserContext user,
             IWorkspace workspace,
-            WorkflowOptions options = null)
+            WorkflowOptions options = null,
+            IBlockLibraryStore libraries = null)
         {
             this.serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
             this.modelValidator = modelValidator ?? throw new ArgumentNullException(nameof(modelValidator));
@@ -101,6 +115,7 @@ namespace TiaStudio.Application.Workflow
             this.user = user ?? throw new ArgumentNullException(nameof(user));
             this.workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
             this.options = options ?? new WorkflowOptions();
+            this.libraries = libraries;
             SessionId = Guid.NewGuid().ToString();
         }
 
@@ -110,8 +125,17 @@ namespace TiaStudio.Application.Workflow
 
         public WorkflowState State { get; private set; } = WorkflowState.Draft;
 
+        public WorkflowInputKind InputKind { get; private set; }
+
+        /// <summary>Gépmodell-módban a modell; könyvtár-módban null.</summary>
         public MachineProject Project { get; private set; }
 
+        /// <summary>Könyvtár-módban a kiválasztott elemek és a cél.</summary>
+        public LibraryImportSelection LibrarySelection { get; private set; }
+
+        public IReadOnlyList<BlockLibraryItem> SelectedLibraryItems => selectedItems;
+
+        /// <summary>A bemenet kanonikus bájtjai (gépmodell-JSON vagy könyvtárválasztás-JSON).</summary>
         public byte[] ModelBytes { get; private set; }
 
         public string ModelSha256 { get; private set; }
@@ -140,16 +164,40 @@ namespace TiaStudio.Application.Workflow
 
         public string FailureMessage { get; private set; }
 
-        public string TiaVersion => Project?.Target?.TiaVersion;
+        public string TiaVersion => InputKind == WorkflowInputKind.Library ? LibrarySelection?.TargetTiaVersion : Project?.Target?.TiaVersion;
+
+        public string PlcName => InputKind == WorkflowInputKind.Library ? LibrarySelection?.PlcName : Project?.Target?.PlcName;
 
         /// <summary>Új vagy módosított modell: minden korábbi eredmény érvénytelen, állapot DRAFT.</summary>
         public void SetProject(MachineProject project)
         {
             Project = project ?? throw new ArgumentNullException(nameof(project));
+            LibrarySelection = null;
+            InputKind = WorkflowInputKind.MachineModel;
             ModelBytes = serializer.Serialize(project);
             ModelSha256 = Sha256.OfBytes(ModelBytes);
             ClearDownstream();
             MoveTo(WorkflowState.Draft, "ModelChanged", null, "model sha256 " + ModelSha256);
+        }
+
+        /// <summary>
+        /// Könyvtárimport: a kiválasztott elemek a gépmodell helyett a munkafolyamat bemenetei.
+        /// VALIDATED = elemszabályok + verziókompatibilitás + könyvtár-integritás, CHECKED = hash-ek
+        /// újramérése, GENERATED = importcsomag (manifest 1.1); utána azonos jóváhagyás és import.
+        /// </summary>
+        public void SetLibrarySelection(LibraryImportSelection selection)
+        {
+            if (libraries == null)
+            {
+                throw new InvalidOperationException("No block library store configured");
+            }
+            LibrarySelection = selection ?? throw new ArgumentNullException(nameof(selection));
+            Project = null;
+            InputKind = WorkflowInputKind.Library;
+            ModelBytes = CanonicalSelection(selection);
+            ModelSha256 = Sha256.OfBytes(ModelBytes);
+            ClearDownstream();
+            MoveTo(WorkflowState.Draft, "LibrarySelectionChanged", null, selection.LibraryName + ": " + selection.ItemIds.Count + " item(s) -> " + selection.TargetTiaVersion);
         }
 
         /// <summary>FAILED (vagy bármely) állapotból vissza DRAFT-ba; a modell megmarad, minden más törlődik.</summary>
@@ -163,7 +211,7 @@ namespace TiaStudio.Application.Workflow
         {
             return Guarded(WorkflowState.Draft, () =>
             {
-                ModelReport = modelValidator.Validate(ModelBytes);
+                ModelReport = InputKind == WorkflowInputKind.Library ? ValidateLibrarySelection() : modelValidator.Validate(ModelBytes);
                 if (!ModelReport.Ok)
                 {
                     return Fail(FirstErrorCode(ModelReport), "Model validation failed with " + ModelReport.ErrorCount + " error(s)", Describe(ModelReport));
@@ -177,6 +225,16 @@ namespace TiaStudio.Application.Workflow
         {
             return Guarded(WorkflowState.Validated, () =>
             {
+                if (InputKind == WorkflowInputKind.Library)
+                {
+                    StaticReport = RecheckLibraryItems();
+                    if (!StaticReport.Ok)
+                    {
+                        return Fail(FirstErrorCode(StaticReport), "Library items changed after validation", Describe(StaticReport));
+                    }
+                    MoveTo(WorkflowState.Checked, "Checked", null, "library item hashes re-verified");
+                    return StepResult.Success("Library items unchanged since validation", Describe(StaticReport));
+                }
                 StaticReport = staticValidator.Validate(ModelBytes);
                 if (!StaticReport.Ok)
                 {
@@ -197,13 +255,17 @@ namespace TiaStudio.Application.Workflow
             {
                 RunId = clock.UtcNow.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
                 string runDirectory = workspace.CreateRunDirectory(RunId);
-                InputPath = Path.Combine(runDirectory, "input", InputFileName);
+                bool library = InputKind == WorkflowInputKind.Library;
+                InputPath = Path.Combine(runDirectory, "input", library ? LibraryInputFileName : InputFileName);
                 Directory.CreateDirectory(Path.GetDirectoryName(InputPath));
                 File.WriteAllBytes(InputPath, ModelBytes);
 
-                Generation = await generator.GenerateAsync(
-                    new GenerationRequest { InputPath = InputPath, OutputDirectory = Path.Combine(runDirectory, "package"), RunId = RunId },
-                    cancellationToken).ConfigureAwait(false);
+                string packageDirectory = Path.Combine(runDirectory, "package");
+                Generation = library
+                    ? BuildLibraryPackage(packageDirectory)
+                    : await generator.GenerateAsync(
+                        new GenerationRequest { InputPath = InputPath, OutputDirectory = packageDirectory, RunId = RunId },
+                        cancellationToken).ConfigureAwait(false);
                 if (!Generation.Success)
                 {
                     return Fail(Generation.ErrorCode ?? ErrorCodes.GeneratorFailed, Generation.Message ?? "Generator failed", Split(Generation.Diagnostics));
@@ -218,12 +280,14 @@ namespace TiaStudio.Application.Workflow
                 {
                     return Fail(ErrorCodes.HashMismatch, "Manifest does not belong to the validated model or generator output");
                 }
-                if (Package.Manifest.TargetTiaVersion != TiaVersion || Package.Manifest.PlcName != Project.Target.PlcName)
+                if (Package.Manifest.TargetTiaVersion != TiaVersion || Package.Manifest.PlcName != PlcName)
                 {
                     return Fail(ErrorCodes.ProjectVersionMismatch, "Manifest target differs from the machine model target");
                 }
                 MoveTo(WorkflowState.Generated, "Generated", null, Package.Manifest.Files.Count + " file(s), manifest " + Package.ManifestSha256);
-                return StepResult.Success("Generated " + Package.Manifest.Files.Count + " SCL source file(s)");
+                return StepResult.Success(library
+                    ? "Import package with " + Package.Manifest.Files.Count + " library block(s) assembled"
+                    : "Generated " + Package.Manifest.Files.Count + " SCL source file(s)");
             });
         }
 
@@ -270,7 +334,7 @@ namespace TiaStudio.Application.Workflow
                     TiaVersion = TiaVersion,
                     ProjectPath = SandboxProjectPath,
                     SandboxRoot = sandbox.SandboxRoot,
-                    PlcName = Project.Target.PlcName,
+                    PlcName = PlcName,
                     SourcesDirectory = Generation.OutputDirectory,
                     ManifestPath = Generation.ManifestPath,
                     DryRun = false,
@@ -443,9 +507,9 @@ namespace TiaStudio.Application.Workflow
 
         private StepResult Precondition(WorkflowState required)
         {
-            if (Project == null)
+            if (ModelBytes == null)
             {
-                return StepResult.Error(ErrorCodes.WorkflowStateInvalid, "No machine project loaded");
+                return StepResult.Error(ErrorCodes.WorkflowStateInvalid, "No machine project or library selection loaded");
             }
             if (State != required)
             {
@@ -519,6 +583,144 @@ namespace TiaStudio.Application.Workflow
             ImportResult = null;
             FailureCode = null;
             FailureMessage = null;
+            selectedItems = new List<BlockLibraryItem>();
+        }
+
+        private static byte[] CanonicalSelection(LibraryImportSelection selection)
+        {
+            string json = JsonConvert.SerializeObject(new SortedDictionary<string, object>(StringComparer.Ordinal)
+            {
+                { "item_ids", selection.ItemIds.OrderBy(i => i, StringComparer.Ordinal).ToList() },
+                { "library_name", selection.LibraryName },
+                { "plc_name", selection.PlcName },
+                { "selection_version", "1.0" },
+                { "target_tia_version", selection.TargetTiaVersion },
+            }, Formatting.Indented);
+            return new System.Text.UTF8Encoding(false).GetBytes(json + "\n");
+        }
+
+        private ValidationReport ValidateLibrarySelection()
+        {
+            List<ValidationIssue> issues = new List<ValidationIssue>();
+            Action<string, string, string> error = (code, path, message) => issues.Add(new ValidationIssue(ValidationIssue.SeverityError, code, path, message));
+            LibraryImportSelection selection = LibrarySelection;
+            selectedItems = new List<BlockLibraryItem>();
+            if (!TiaVersions.IsSupported(selection.TargetTiaVersion))
+            {
+                error(ErrorCodes.UnsupportedTiaVersion, "target_tia_version", "TIA version '" + selection.TargetTiaVersion + "' is not supported (V18, V19, V20)");
+            }
+            if (string.IsNullOrEmpty(selection.PlcName) || !NamingRules.IsPlcName(selection.PlcName))
+            {
+                error(ErrorCodes.InvalidIdentifier, "plc_name", "PLC name '" + selection.PlcName + "' does not match ^[A-Za-z][A-Za-z0-9_-]{0,63}$");
+            }
+            if (selection.ItemIds.Count == 0)
+            {
+                error(ErrorCodes.LibraryItemNotFound, "items", "Select at least one library item");
+            }
+            BlockLibraryIndex index = null;
+            try
+            {
+                index = libraries.Load(selection.LibraryName);
+            }
+            catch (BlockLibraryException ex)
+            {
+                error(ex.ErrorCode, "library", ex.Message);
+            }
+            if (index != null)
+            {
+                foreach (TiaMessage problem in libraries.Verify(selection.LibraryName))
+                {
+                    error(problem.Code ?? ErrorCodes.LibraryInvalid, "library" + (problem.Path == null ? string.Empty : ":" + problem.Path), problem.Text);
+                }
+                HashSet<string> names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                int position = 0;
+                foreach (string id in selection.ItemIds)
+                {
+                    string path = "items[" + position++ + "]";
+                    BlockLibraryItem item = index.Items.FirstOrDefault(i => i.ItemId == id);
+                    if (item == null)
+                    {
+                        error(ErrorCodes.LibraryItemNotFound, path, "Library item " + id + " not found");
+                        continue;
+                    }
+                    Tuple<string, string> importProblem = LibraryRules.ImportProblem(item, selection.TargetTiaVersion);
+                    if (importProblem != null)
+                    {
+                        error(importProblem.Item1, path, importProblem.Item2);
+                        continue;
+                    }
+                    if (!names.Add(item.BlockName))
+                    {
+                        error(ErrorCodes.LibraryDuplicateBlock, path, "Block " + item.BlockName + " is selected more than once (choose one revision)");
+                        continue;
+                    }
+                    string file = libraries.ItemPath(selection.LibraryName, item);
+                    if (item.Format == BlockFormats.ExternalSource && File.Exists(file) && !LibraryRules.IsAsciiExternalSource(File.ReadAllBytes(file)))
+                    {
+                        error(ErrorCodes.NonAsciiSource, path, item.BlockName + " is not an ASCII external source");
+                        continue;
+                    }
+                    selectedItems.Add(item);
+                }
+            }
+            if (issues.Count == 0 && selectedItems.Any(i => i.Format == BlockFormats.ExternalSource && i.SourceTiaVersion != selection.TargetTiaVersion))
+            {
+                issues.Add(new ValidationIssue(ValidationIssue.SeverityWarning, ErrorCodes.LibraryVersionMismatch, "items",
+                    "Some external sources were exported from another TIA version; the offline compile in " + selection.TargetTiaVersion + " decides whether they are compatible"));
+            }
+            return LibraryReport("library-selection", issues);
+        }
+
+        private ValidationReport RecheckLibraryItems()
+        {
+            List<ValidationIssue> issues = new List<ValidationIssue>();
+            BlockLibraryIndex index;
+            try
+            {
+                index = libraries.Load(LibrarySelection.LibraryName);
+            }
+            catch (BlockLibraryException ex)
+            {
+                issues.Add(new ValidationIssue(ValidationIssue.SeverityError, ex.ErrorCode, "library", ex.Message));
+                return LibraryReport("library-integrity", issues);
+            }
+            foreach (BlockLibraryItem item in selectedItems)
+            {
+                BlockLibraryItem current = index.Items.FirstOrDefault(i => i.ItemId == item.ItemId);
+                string file = libraries.ItemPath(LibrarySelection.LibraryName, item);
+                if (current == null || current.Sha256 != item.Sha256 || !File.Exists(file) || Sha256.OfFile(file) != item.Sha256)
+                {
+                    issues.Add(new ValidationIssue(ValidationIssue.SeverityError, ErrorCodes.HashMismatch, item.BlockName, "Library item changed or was removed since validation"));
+                }
+            }
+            return LibraryReport("library-integrity", issues);
+        }
+
+        private GenerationResult BuildLibraryPackage(string packageDirectory)
+        {
+            try
+            {
+                return libraries.BuildImportPackage(LibrarySelection, selectedItems, packageDirectory, RunId, ModelSha256, ModelReport);
+            }
+            catch (BlockLibraryException ex)
+            {
+                return new GenerationResult { Success = false, ErrorCode = ex.ErrorCode, Message = ex.Message };
+            }
+        }
+
+        private static ValidationReport LibraryReport(string validator, List<ValidationIssue> issues)
+        {
+            int errors = issues.Count(i => i.Severity == ValidationIssue.SeverityError);
+            return new ValidationReport
+            {
+                Validator = validator,
+                ValidatorVersion = "1.0",
+                RulesVersion = BlockLibraryIndex.CurrentFormatVersion,
+                Ok = errors == 0,
+                ErrorCount = errors,
+                WarningCount = issues.Count - errors,
+                Issues = issues,
+            };
         }
 
         private static string FirstErrorCode(ValidationReport report)

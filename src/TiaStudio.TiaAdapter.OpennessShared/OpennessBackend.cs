@@ -100,7 +100,11 @@ namespace TiaStudio.TiaAdapter.Openness
             {
                 TiaVersion = tiaVersion,
                 ApiLevel = "V18-common",
-                Operations = new List<string> { TiaOperations.GetCapabilities, TiaOperations.ValidateJob, TiaOperations.ImportAndCompile },
+                Operations = new List<string>
+                {
+                    TiaOperations.GetCapabilities, TiaOperations.ValidateJob, TiaOperations.ImportAndCompile,
+                    TiaOperations.ListBlocks, TiaOperations.ExportBlocks,
+                },
                 Features = new Dictionary<string, bool>
                 {
                     { CapabilityFeatures.SclExternalSourceImport, true },
@@ -110,6 +114,8 @@ namespace TiaStudio.TiaAdapter.Openness
                     { CapabilityFeatures.Hmi, false },
                     { CapabilityFeatures.SimaticMlImport, false },
                     { CapabilityFeatures.PlcDownload, false },
+                    { CapabilityFeatures.BlockExport, true },
+                    { CapabilityFeatures.SimaticMlBlockImport, true },
                 },
             };
         }
@@ -337,6 +343,135 @@ namespace TiaStudio.TiaAdapter.Openness
             };
             Flatten(compiled.Messages, 0, report.Messages);
             return report;
+        }
+
+        public IReadOnlyList<ProjectBlockInfo> DescribeBlocks()
+        {
+            List<ProjectBlockInfo> result = new List<ProjectBlockInfo>();
+            DescribeBlockGroup(software.BlockGroup, "Program blocks", result);
+            DescribeTypeGroup(software.TypeGroup, "PLC data types", result);
+            return result;
+        }
+
+        public void ExportBlock(ProjectBlockInfo block, string format, string filePath)
+        {
+            // Mindkét út csak fájlt ír; a projektet nem módosítja és nem menti.
+            FileInfo target = new FileInfo(filePath);
+            if (block.BlockType == BlockTypes.UDT)
+            {
+                PlcType type = FindType(software.TypeGroup, block.Name) ?? throw new OpennessException(ErrorCodes.BlockNotFound, "PLC data type " + block.Name + " not found");
+                if (format == BlockFormats.SimaticMl)
+                {
+                    type.Export(target, ExportOptions.WithDefaults);
+                }
+                else
+                {
+                    software.ExternalSourceGroup.GenerateSource(new IGenerateSource[] { type }, target, GenerateOptions.None);
+                }
+                return;
+            }
+            PlcBlock plcBlock = FindBlock(software.BlockGroup, block.Name) ?? throw new OpennessException(ErrorCodes.BlockNotFound, "Block " + block.Name + " not found");
+            if (format == BlockFormats.SimaticMl)
+            {
+                plcBlock.Export(target, ExportOptions.WithDefaults);
+            }
+            else
+            {
+                software.ExternalSourceGroup.GenerateSource(new IGenerateSource[] { plcBlock }, target, GenerateOptions.None);
+            }
+        }
+
+        public void ImportSimaticMl(string blockType, string filePath)
+        {
+            // ImportOptions.None: meglévő objektumot nem ír felül (az ütközésvizsgálat előtte lefutott).
+            if (blockType == BlockTypes.UDT)
+            {
+                software.TypeGroup.Types.Import(new FileInfo(filePath), ImportOptions.None);
+            }
+            else
+            {
+                software.BlockGroup.Blocks.Import(new FileInfo(filePath), ImportOptions.None);
+            }
+        }
+
+        private static void DescribeBlockGroup(PlcBlockGroup group, string location, List<ProjectBlockInfo> output)
+        {
+            foreach (PlcBlock block in group.Blocks)
+            {
+                string language = block.ProgrammingLanguage.ToString();
+                output.Add(new ProjectBlockInfo
+                {
+                    Name = block.Name,
+                    BlockType = block is FB ? BlockTypes.FB : block is FC ? BlockTypes.FC : block is OB ? BlockTypes.OB
+                        : block is GlobalDB || block is InstanceDB || block is ArrayDB ? BlockTypes.DB : "Unknown",
+                    DbKind = block is InstanceDB ? DbKinds.Instance : block is ArrayDB ? DbKinds.Array : block is GlobalDB ? DbKinds.Global : null,
+                    Number = block.Number,
+                    ProgrammingLanguage = language,
+                    Location = location,
+                    IsKnowHowProtected = block.IsKnowHowProtected,
+                    IsConsistent = block.IsConsistent,
+                    IsSafety = LibraryRules.IsSafetyLanguage(language),
+                });
+            }
+            foreach (PlcBlockUserGroup child in group.Groups)
+            {
+                DescribeBlockGroup(child, location + "/" + child.Name, output);
+            }
+        }
+
+        private static void DescribeTypeGroup(PlcTypeGroup group, string location, List<ProjectBlockInfo> output)
+        {
+            foreach (PlcType type in group.Types)
+            {
+                output.Add(new ProjectBlockInfo
+                {
+                    Name = type.Name,
+                    BlockType = BlockTypes.UDT,
+                    Location = location,
+                    IsKnowHowProtected = type.IsKnowHowProtected,
+                    IsConsistent = type.IsConsistent,
+                });
+            }
+            foreach (PlcTypeUserGroup child in group.Groups)
+            {
+                DescribeTypeGroup(child, location + "/" + child.Name, output);
+            }
+        }
+
+        private static PlcBlock FindBlock(PlcBlockGroup group, string name)
+        {
+            PlcBlock found = group.Blocks.Find(name);
+            if (found != null)
+            {
+                return found;
+            }
+            foreach (PlcBlockUserGroup child in group.Groups)
+            {
+                found = FindBlock(child, name);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+            return null;
+        }
+
+        private static PlcType FindType(PlcTypeGroup group, string name)
+        {
+            PlcType found = group.Types.Find(name);
+            if (found != null)
+            {
+                return found;
+            }
+            foreach (PlcTypeUserGroup child in group.Groups)
+            {
+                found = FindType(child, name);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+            return null;
         }
 
         private static void Flatten(CompilerResultMessageComposition messages, int depth, List<CompileMessage> output)

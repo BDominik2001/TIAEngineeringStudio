@@ -115,6 +115,35 @@ namespace TiaStudio.UnitTests
         {
             return Compile;
         }
+
+        public List<ProjectBlockInfo> Described { get; } = new List<ProjectBlockInfo>();
+
+        public List<string> ImportedXml { get; } = new List<string>();
+
+        public List<string> Exported { get; } = new List<string>();
+
+        /// <summary>Az exportált fájl tartalma blokknév szerint (alapértelmezés: ASCII SCL).</summary>
+        public Func<ProjectBlockInfo, string, byte[]> ExportContent { get; set; } =
+            (block, format) => System.Text.Encoding.ASCII.GetBytes(format == BlockFormats.SimaticMl
+                ? "<Document><ProgrammingLanguage>" + block.ProgrammingLanguage + "</ProgrammingLanguage></Document>"
+                : "FUNCTION_BLOCK \"" + block.Name + "\"\r\nEND_FUNCTION_BLOCK\r\n");
+
+        public IReadOnlyList<ProjectBlockInfo> DescribeBlocks()
+        {
+            return Described;
+        }
+
+        public void ExportBlock(ProjectBlockInfo block, string format, string filePath)
+        {
+            Exported.Add(block.Name + ":" + format);
+            File.WriteAllBytes(filePath, ExportContent(block, format));
+        }
+
+        public void ImportSimaticMl(string blockType, string filePath)
+        {
+            Assert.True(File.Exists(filePath));
+            ImportedXml.Add(Path.GetFileName(filePath));
+        }
     }
 
     /// <summary>A spec 11.3 forgatókönyvei a worker oldalon, TIA nélkül.</summary>

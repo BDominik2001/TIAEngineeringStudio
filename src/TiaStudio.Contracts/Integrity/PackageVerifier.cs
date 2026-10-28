@@ -102,9 +102,18 @@ namespace TiaStudio.Contracts.Integrity
             {
                 return "Manifest is empty";
             }
-            if (manifest.ManifestVersion != GenerationManifest.CurrentVersion)
+            bool v10 = manifest.ManifestVersion == GenerationManifest.CurrentVersion;
+            if (!v10 && manifest.ManifestVersion != GenerationManifest.LibraryVersion)
             {
                 return "Unsupported manifest_version: " + manifest.ManifestVersion;
+            }
+            if (v10 && (manifest.PackageKind != null || manifest.Files != null && manifest.Files.Any(f => f != null && f.Format != null)))
+            {
+                return "manifest_version 1.0 must not contain package_kind or format";
+            }
+            if (!v10 && manifest.PackageKind != GenerationManifest.KindGenerated && manifest.PackageKind != GenerationManifest.KindLibraryImport)
+            {
+                return "Unsupported package_kind: " + manifest.PackageKind;
             }
             if (manifest.DownloadAllowed != false)
             {
@@ -125,6 +134,10 @@ namespace TiaStudio.Contracts.Integrity
             if (manifest.Files.Any(f => f == null || string.IsNullOrEmpty(f.BlockName) || string.IsNullOrEmpty(f.Sha256) || f.ImportOrder < 1))
             {
                 return "Manifest file entry is incomplete";
+            }
+            if (manifest.Files.Any(f => !BlockFormats.All.Contains(f.EffectiveFormat) || !BlockTypes.All.Contains(f.BlockType)))
+            {
+                return "Manifest file entry has an unknown format or block_type";
             }
             if (manifest.Files.Select(f => f.ImportOrder).Distinct().Count() != manifest.Files.Count)
             {

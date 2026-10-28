@@ -62,6 +62,18 @@ namespace TiaStudio.TiaAdapter.Common
 
         /// <summary>Offline fordítás (ICompilable); a rekurzív üzenetfa lapítva.</summary>
         CompileReport CompileOffline();
+
+        /// <summary>Felhasználói blokkok és PLC-adattípusok (rendszerblokkok nélkül) metaadatai.</summary>
+        IReadOnlyList<ProjectBlockInfo> DescribeBlocks();
+
+        /// <summary>
+        /// Egy blokk/adattípus exportja fájlba, a projekt módosítása nélkül:
+        /// external_source = PlcExternalSourceSystemGroup.GenerateSource, simaticml = PlcBlock/PlcType.Export.
+        /// </summary>
+        void ExportBlock(ProjectBlockInfo block, string format, string filePath);
+
+        /// <summary>SimaticML import a gyökércsoportba felülírás nélkül (ImportOptions.None).</summary>
+        void ImportSimaticMl(string blockType, string filePath);
     }
 
     public sealed class OpennessProblem
@@ -172,6 +184,8 @@ namespace TiaStudio.TiaAdapter.Common
                     { CapabilityFeatures.Hmi, false },
                     { CapabilityFeatures.SimaticMlImport, false },
                     { CapabilityFeatures.PlcDownload, false },
+                    { CapabilityFeatures.BlockExport, false },
+                    { CapabilityFeatures.SimaticMlBlockImport, false },
                 },
             };
         }

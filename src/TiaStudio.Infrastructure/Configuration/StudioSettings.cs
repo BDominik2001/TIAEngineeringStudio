@@ -28,6 +28,12 @@ namespace TiaStudio.Infrastructure.Configuration
         [JsonProperty("output_root")]
         public string OutputRoot { get; set; } = "generated";
 
+        [JsonProperty("library_root")]
+        public string LibraryRoot { get; set; } = "libraries";
+
+        [JsonProperty("library_worker_timeout_seconds")]
+        public int LibraryWorkerTimeoutSeconds { get; set; } = 900;
+
         [JsonProperty("log_directory")]
         public string LogDirectory { get; set; } = "logs";
 

@@ -35,7 +35,9 @@
 
 - `FB_Motor`, `FB_Valve`, `FB_Axis`, diagnosztikai FB-k, UDT-k; új `kind` értékek a sémában (sémaverzió-növeléssel).
 - Automatikus PLC tag-táblák, biztonságos I/O-mapping (alias csak explicit szabályként).
-- Verziózott globális sablonkönyvtár / master copy-k.
+- ~~Verziózott blokk-könyvtár~~ – elkészült verziófüggetlen formában ([BLOCK_LIBRARY.md](BLOCK_LIBRARY.md));
+  hátra van: TIA natív globális könyvtárak (`.al1x`, master copy-k, típusok), csoportstruktúra megőrzése,
+  függőségek automatikus felvétele.
 - HMI / Unified HMI verziónként külön capability flaggel.
 - SimaticML/AML export-import, ahol a célverzió bizonyítottan támogatja.
 - Git-alapú változáskövetés, generált projektek összevetése.

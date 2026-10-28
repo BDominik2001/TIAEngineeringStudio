@@ -1,12 +1,14 @@
 using System;
 using System.IO;
 using System.Windows;
+using TiaStudio.Application.Library;
 using TiaStudio.Application.Workflow;
 using TiaStudio.Desktop.Services;
 using TiaStudio.Desktop.ViewModels;
 using TiaStudio.Infrastructure.Configuration;
 using TiaStudio.Infrastructure.Generator;
 using TiaStudio.Infrastructure.Json;
+using TiaStudio.Infrastructure.Library;
 using TiaStudio.Infrastructure.Logging;
 using TiaStudio.Infrastructure.Native;
 using TiaStudio.Infrastructure.Platform;
@@ -51,6 +53,8 @@ namespace TiaStudio.Desktop
             SandboxService sandbox = new SandboxService(settings.Resolve(baseDirectory, settings.SandboxRoot), clock, user);
             MachineProjectSerializer serializer = new MachineProjectSerializer();
             MachineProjectJsonValidator validator = new MachineProjectJsonValidator();
+            FileWorkspace workspace = new FileWorkspace(settings.Resolve(baseDirectory, settings.OutputRoot));
+            FileBlockLibraryStore libraries = new FileBlockLibraryStore(settings.Resolve(baseDirectory, settings.LibraryRoot), clock, user);
 
             EngineeringWorkflow workflow = new EngineeringWorkflow(
                 serializer,
@@ -65,12 +69,15 @@ namespace TiaStudio.Desktop
                 audit,
                 clock,
                 user,
-                new FileWorkspace(settings.Resolve(baseDirectory, settings.OutputRoot)),
+                workspace,
                 new WorkflowOptions
                 {
                     DryRunTimeout = TimeSpan.FromSeconds(settings.DryRunTimeoutSeconds),
                     ImportTimeout = TimeSpan.FromSeconds(settings.ImportTimeoutSeconds),
-                });
+                },
+                libraries);
+            BlockLibraryService libraryService = new BlockLibraryService(
+                libraries, workerClient, sandbox, workspace, audit, clock, user, TimeSpan.FromSeconds(settings.LibraryWorkerTimeoutSeconds));
 
             MainViewModel viewModel = new MainViewModel(
                 workflow,
@@ -79,7 +86,8 @@ namespace TiaStudio.Desktop
                 serializer,
                 validator,
                 new WpfDialogService(),
-                handler => audit.LineWritten += (sender, line) => handler(line));
+                handler => audit.LineWritten += (sender, line) => handler(line),
+                libraryService);
             MainWindow window = new MainWindow { DataContext = viewModel };
             MainWindow = window;
             window.Show();

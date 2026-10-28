@@ -160,7 +160,7 @@ namespace TiaStudio.TiaAdapter.Common
             result.JobId = command.JobId;
             result.RequestedVersion = command.TiaVersion;
             result.Operation = command.Operation;
-            if (command.ProtocolVersion != ProtocolVersions.Current)
+            if (!ProtocolVersions.Supported.Contains(command.ProtocolVersion))
             {
                 Finish(result, TiaJobStatus.Blocked, ErrorCodes.ProtocolVersionUnsupported, "protocol_version " + command.ProtocolVersion + " is not supported", SandboxStates.NotTouched);
                 return null;
@@ -198,6 +198,10 @@ namespace TiaStudio.TiaAdapter.Common
                     {
                         Finish(result, TiaJobStatus.Success, null, "Capabilities reported", SandboxStates.NotTouched);
                     }
+                    return;
+                case TiaOperations.ListBlocks:
+                case TiaOperations.ExportBlocks:
+                    RunReadOnlyJob(command, result);
                     return;
                 case TiaOperations.UpgradeProject:
                     Finish(result, TiaJobStatus.Unsupported, ErrorCodes.OperationNotSupported,
@@ -273,7 +277,9 @@ namespace TiaStudio.TiaAdapter.Common
                 return;
             }
             List<ManifestFile> files = manifest.Files.OrderBy(f => f.ImportOrder).ToList();
-            string nonAscii = files.Select(f => f.RelativePath).FirstOrDefault(p => File.ReadAllBytes(SourcePath(command, p)).Any(b => b > 0x7F));
+            string nonAscii = files.Where(f => f.EffectiveFormat == BlockFormats.ExternalSource)
+                .Select(f => f.RelativePath)
+                .FirstOrDefault(p => !LibraryRules.IsAsciiExternalSource(File.ReadAllBytes(SourcePath(command, p))));
             if (nonAscii != null)
             {
                 Finish(result, TiaJobStatus.Blocked, ErrorCodes.NonAsciiSource, "External SCL sources must be ASCII: " + nonAscii, SandboxStates.NotTouched);
@@ -368,14 +374,22 @@ namespace TiaStudio.TiaAdapter.Common
                 result.SandboxState = SandboxStates.ModifiedNotSaved;
                 try
                 {
-                    plc.ImportExternalSource(ExternalSourceName(file), path);
+                    if (file.EffectiveFormat == BlockFormats.SimaticMl)
+                    {
+                        plc.ImportSimaticMl(file.BlockType, path);
+                    }
+                    else
+                    {
+                        plc.ImportExternalSource(ExternalSourceName(file), path);
+                    }
                 }
                 catch (Exception ex)
                 {
                     Finish(result, TiaJobStatus.Failed, OpennessErrorClassifier.Classify(ex, ErrorCodes.ImportFailed), "Import of " + file.RelativePath + " failed: " + ex.Message, SandboxStates.ModifiedNotSaved);
                     return;
                 }
-                result.Messages.Add(new TiaMessage(MessageSeverity.Info, null, "Generated " + file.BlockType + " " + file.BlockName + " from external source", file.RelativePath));
+                result.Messages.Add(new TiaMessage(MessageSeverity.Info, null,
+                    (file.EffectiveFormat == BlockFormats.SimaticMl ? "Imported " : "Generated ") + file.BlockType + " " + file.BlockName + " from " + file.EffectiveFormat, file.RelativePath));
             }
 
             CompileReport compile;
@@ -436,7 +450,7 @@ namespace TiaStudio.TiaAdapter.Common
                 {
                     location = hit.Location + "/" + hit.Name;
                 }
-                else if (sources.TryGetValue(ExternalSourceName(file), out hit))
+                else if (file.EffectiveFormat == BlockFormats.ExternalSource && sources.TryGetValue(ExternalSourceName(file), out hit))
                 {
                     location = "External source files/" + hit.Name;
                 }
@@ -453,9 +467,197 @@ namespace TiaStudio.TiaAdapter.Common
             return plan;
         }
 
+        /// <summary>A külső forrás neve a projektben = a forrásfájl neve (pl. FB_Cylinder.scl, DB_Data.db).</summary>
         public static string ExternalSourceName(ManifestFile file)
         {
-            return file.BlockName + ".scl";
+            return Path.GetFileName(file.RelativePath);
+        }
+
+        /// <summary>
+        /// ListBlocks / ExportBlocks: csak olvasó műveletek egy sandbox-projekten. A projektet
+        /// nem menti; az export a projektbe semmit nem ír (sandbox_state = Unchanged).
+        /// </summary>
+        private void RunReadOnlyJob(TiaCommand command, TiaResult result)
+        {
+            bool export = command.Operation == TiaOperations.ExportBlocks;
+            OpennessProblem problem = backend.ProbeEnvironment();
+            if (problem != null)
+            {
+                Finish(result, TiaJobStatus.Blocked, problem.ErrorCode, problem.Message, SandboxStates.NotTouched);
+                return;
+            }
+            string missing = new[]
+            {
+                Tuple.Create("project_path", command.ProjectPath),
+                Tuple.Create("sandbox_root", command.SandboxRoot),
+                Tuple.Create("plc_name", command.PlcName),
+                Tuple.Create("export_directory", export ? command.ExportDirectory : "-"),
+            }.Where(t => string.IsNullOrWhiteSpace(t.Item2)).Select(t => t.Item1).FirstOrDefault();
+            if (missing != null)
+            {
+                Finish(result, TiaJobStatus.Blocked, ErrorCodes.CommandInvalid, "Required field '" + missing + "' is missing", SandboxStates.NotTouched);
+                return;
+            }
+            Tuple<string, string> sandboxProblem = SandboxRules.Check(command.ProjectPath, workerVersion, command.SandboxRoot);
+            if (sandboxProblem != null)
+            {
+                Finish(result, TiaJobStatus.Blocked, sandboxProblem.Item1, sandboxProblem.Item2, SandboxStates.NotTouched);
+                return;
+            }
+            if (export)
+            {
+                string exportProblem = ExportRequestProblem(command);
+                if (exportProblem != null)
+                {
+                    Finish(result, TiaJobStatus.Blocked, ErrorCodes.CommandInvalid, exportProblem, SandboxStates.NotTouched);
+                    return;
+                }
+            }
+
+            IOpennessSession session;
+            try
+            {
+                session = backend.OpenProject(Path.GetFullPath(command.ProjectPath));
+            }
+            catch (Exception ex)
+            {
+                Finish(result, TiaJobStatus.Blocked, OpennessErrorClassifier.Classify(ex, ErrorCodes.ProjectNotFound), "Project cannot be opened without upgrade: " + ex.Message, SandboxStates.NotTouched);
+                return;
+            }
+            try
+            {
+                result.SandboxState = SandboxStates.Unchanged;
+                IPlcTarget plc = session.FindPlc(command.PlcName);
+                if (plc == null)
+                {
+                    Finish(result, TiaJobStatus.Blocked, ErrorCodes.PlcNotFound, "PLC '" + command.PlcName + "' not found in the project", SandboxStates.Unchanged);
+                    return;
+                }
+                List<ProjectBlockInfo> blocks = plc.DescribeBlocks().ToList();
+                foreach (ProjectBlockInfo block in blocks)
+                {
+                    block.ExportableFormats = LibraryRules.ExportableFormats(block);
+                    block.NotExportableReason = block.ExportableFormats.Count == 0 ? LibraryRules.ExportProblem(block, BlockFormats.SimaticMl) : null;
+                }
+                if (!export)
+                {
+                    result.Blocks = blocks;
+                    Finish(result, TiaJobStatus.Success, null, blocks.Count + " block(s)/type(s) listed; project not modified", SandboxStates.Unchanged);
+                    return;
+                }
+                ExportSelected(command, result, plc, blocks);
+            }
+            finally
+            {
+                try
+                {
+                    session.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    result.Messages.Add(new TiaMessage(MessageSeverity.Warning, null, "Closing the project/TIA Portal instance failed: " + ex.Message));
+                }
+            }
+        }
+
+        private static string ExportRequestProblem(TiaCommand command)
+        {
+            if (command.ExportBlocks == null || command.ExportBlocks.Count == 0)
+            {
+                return "export_blocks must list at least one block";
+            }
+            if (command.ExportBlocks.Any(b => b == null || string.IsNullOrEmpty(b.BlockName) || !BlockFormats.All.Contains(b.Format)))
+            {
+                return "export_blocks contains an empty block name or an unknown format";
+            }
+            if (command.ExportBlocks.Select(b => b.BlockName).Distinct(StringComparer.OrdinalIgnoreCase).Count() != command.ExportBlocks.Count)
+            {
+                return "export_blocks lists a block more than once";
+            }
+            if (!Path.IsPathRooted(command.ExportDirectory) || !Directory.Exists(command.ExportDirectory))
+            {
+                return "export_directory must be an existing absolute directory";
+            }
+            if (Directory.EnumerateFileSystemEntries(command.ExportDirectory).Any())
+            {
+                return "export_directory must be empty";
+            }
+            return null;
+        }
+
+        private void ExportSelected(TiaCommand command, TiaResult result, IPlcTarget plc, List<ProjectBlockInfo> blocks)
+        {
+            List<Tuple<ExportRequestItem, ProjectBlockInfo>> selected = new List<Tuple<ExportRequestItem, ProjectBlockInfo>>();
+            foreach (ExportRequestItem request in command.ExportBlocks)
+            {
+                ProjectBlockInfo block = blocks.FirstOrDefault(b => string.Equals(b.Name, request.BlockName, StringComparison.Ordinal))
+                    ?? blocks.SingleOrDefault(b => string.Equals(b.Name, request.BlockName, StringComparison.OrdinalIgnoreCase));
+                if (block == null)
+                {
+                    Finish(result, TiaJobStatus.Blocked, ErrorCodes.BlockNotFound, "Block '" + request.BlockName + "' not found in PLC '" + plc.Name + "'", SandboxStates.Unchanged);
+                    return;
+                }
+                string problem = LibraryRules.ExportProblem(block, request.Format);
+                if (problem != null)
+                {
+                    Finish(result, TiaJobStatus.Blocked, ErrorCodes.LibraryItemNotAllowed, block.Name + ": " + problem, SandboxStates.Unchanged);
+                    return;
+                }
+                selected.Add(Tuple.Create(request, block));
+            }
+
+            result.ExportedFiles = new List<ExportedBlockFile>();
+            foreach (Tuple<ExportRequestItem, ProjectBlockInfo> pair in selected)
+            {
+                if (Volatile.Read(ref cancelRequested) == 1)
+                {
+                    Finish(result, TiaJobStatus.Cancelled, ErrorCodes.Cancelled, "Export cancelled; no library entry may be created from a partial export", SandboxStates.Unchanged);
+                    return;
+                }
+                ProjectBlockInfo block = pair.Item2;
+                string format = pair.Item1.Format;
+                string fileName = block.Name + LibraryRules.FileExtension(block.BlockType, format);
+                string path = Path.Combine(command.ExportDirectory, fileName);
+                try
+                {
+                    plc.ExportBlock(block, format, path);
+                }
+                catch (Exception ex)
+                {
+                    Finish(result, TiaJobStatus.Failed, OpennessErrorClassifier.Classify(ex, ErrorCodes.ExportFailed), "Export of " + block.Name + " failed: " + ex.Message, SandboxStates.Unchanged);
+                    return;
+                }
+                if (!File.Exists(path))
+                {
+                    Finish(result, TiaJobStatus.Failed, ErrorCodes.ExportFailed, "Export of " + block.Name + " produced no file", SandboxStates.Unchanged);
+                    return;
+                }
+                byte[] content = File.ReadAllBytes(path);
+                if (format == BlockFormats.SimaticMl && LibraryRules.SimaticMlContainsSafety(content))
+                {
+                    Finish(result, TiaJobStatus.Failed, ErrorCodes.LibraryItemNotAllowed, block.Name + " contains safety (F-) content", SandboxStates.Unchanged);
+                    return;
+                }
+                if (format == BlockFormats.ExternalSource && !LibraryRules.IsAsciiExternalSource(content))
+                {
+                    Finish(result, TiaJobStatus.Failed, ErrorCodes.LibraryItemNotAllowed,
+                        block.Name + " source contains non-ASCII characters (e.g. accented comments) and could not be re-imported as external source; export it as SimaticML", SandboxStates.Unchanged);
+                    return;
+                }
+                result.ExportedFiles.Add(new ExportedBlockFile
+                {
+                    BlockName = block.Name,
+                    BlockType = block.BlockType,
+                    DbKind = block.DbKind,
+                    ProgrammingLanguage = block.ProgrammingLanguage,
+                    Format = format,
+                    RelativePath = fileName,
+                    Sha256 = Sha256.OfBytes(content),
+                    ByteLength = content.Length,
+                });
+            }
+            result.Blocks = selected.Select(p => p.Item2).ToList();
+            Finish(result, TiaJobStatus.Success, null, "Exported " + selected.Count + " block(s); project not modified", SandboxStates.Unchanged);
         }
 
         private static string SourcePath(TiaCommand command, string relativePath)

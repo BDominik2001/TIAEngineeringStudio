@@ -7,8 +7,16 @@ namespace TiaStudio.Contracts
     /// <summary>contracts/generation-manifest.schema.json (manifest_version 1.0).</summary>
     public sealed class GenerationManifest
     {
+        /// <summary>A Python-generátor által írt verzió.</summary>
         public const string CurrentVersion = "1.0";
+
+        /// <summary>1.1: package_kind és fájlonkénti format (könyvtárimport, SimaticML).</summary>
+        public const string LibraryVersion = "1.1";
+
         public const string FileName = "manifest.json";
+
+        public const string KindGenerated = "generated";
+        public const string KindLibraryImport = "library_import";
 
         [JsonProperty("manifest_version")]
         public string ManifestVersion { get; set; }
@@ -69,6 +77,10 @@ namespace TiaStudio.Contracts
 
         [JsonProperty("download_allowed")]
         public bool? DownloadAllowed { get; set; }
+
+        /// <summary>1.1-től: generated | library_import. 1.0-ban hiányzik (= generated).</summary>
+        [JsonProperty("package_kind", NullValueHandling = NullValueHandling.Ignore)]
+        public string PackageKind { get; set; }
     }
 
     public sealed class ManifestFile
@@ -90,6 +102,13 @@ namespace TiaStudio.Contracts
 
         [JsonProperty("import_order")]
         public int ImportOrder { get; set; }
+
+        /// <summary>1.1-től: external_source | simaticml. Hiányzó érték = external_source.</summary>
+        [JsonProperty("format", NullValueHandling = NullValueHandling.Ignore)]
+        public string Format { get; set; }
+
+        [JsonIgnore]
+        public string EffectiveFormat => Format ?? BlockFormats.ExternalSource;
     }
 
     /// <summary>A Rust/Python/C# validátorok közös riportformátuma (docs/VALIDATION_RULES.md 8.).</summary>

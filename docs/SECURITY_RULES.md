@@ -18,6 +18,18 @@
 | 14 | TIA-verziót nem találgat | registry-felderítés csak natív API-kulcsra; hiánynál megáll | `MissingTiaStopsWithoutGuessing`, `OlderApiInsideNewerInstallIsNotTreatedAsOlderTia` |
 | 15 | Közös hibatipológia | `contracts/error-codes.json`; C#/Python/Rust teszt ellenőrzi | `CSharpConstantsMatchSharedCatalogue`, `test_emitted_codes_are_in_shared_catalogue`, Rust `error_codes` teszt |
 
+## Blokk-könyvtár (docs/BLOCK_LIBRARY.md)
+
+| Szabály | Megvalósítás | Teszt |
+|---|---|---|
+| Export is csak sandboxból, csak olvasva | `BlockLibraryService` + worker `SandboxRules`; `ExportBlocks` nem ment | `ExportFromNonSandboxIsRefused`, `ExportWritesHashedFilesWithoutSaving` |
+| OB, safety (F-), know-how védett, inkonzisztens blokk kizárva | `LibraryRules.ExportProblem/ImportProblem`, SimaticML F-tartalom szűrése | `ExportableFormats`, `ExportOfOrganizationBlockIsRefusedBeforeAnyExport`, `SafetyContentInExportIsRefused` |
+| SimaticML csak azonos TIA-verzióba | `LibraryRules.ImportProblem` | `SimaticMlFromOtherVersionFailsValidation` |
+| Elemfájl nem íródik felül, minden export új revízió | `FileBlockLibraryStore` (`FileMode.CreateNew`) | `ExportsBecomeNewRevisionsAndFilesAreNeverOverwritten` |
+| Részleges export nem kerül a könyvtárba | teljes siker + hash-újramérés után atomikus indexírás | `FailedExportAddsNothing`, `ExportFileChangedAfterExportAddsNothing` |
+| Könyvtár-manipuláció észlelése | `Verify`: útvonalminta, SHA-256, bájthossz; import előtt kétszer (VALIDATED, CHECKED) | `TamperedItemIsDetected`, `ManipulatedIndexPathIsRejected`, `ItemChangedAfterValidationFailsCheck` |
+| Könyvtárimport ugyanazon jóváhagyási láncon | `EngineeringWorkflow` könyvtár-mód | `LibraryImportRunsThroughApprovalChainToSaved` |
+
 ## Jóváhagyás
 
 Az `approved_by_user` önmagában **nem** jogosultság. A jóváhagyás `ApprovalDigest`-je a konkrét

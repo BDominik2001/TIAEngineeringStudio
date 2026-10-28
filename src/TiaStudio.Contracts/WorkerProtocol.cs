@@ -5,7 +5,10 @@ namespace TiaStudio.Contracts
 {
     public static class ProtocolVersions
     {
-        public const string Current = "1.0";
+        /// <summary>1.1: ListBlocks/ExportBlocks műveletek, export_* parancsmezők, blocks/exported_files eredménymezők.</summary>
+        public const string Current = "1.1";
+
+        public static readonly IReadOnlyList<string> Supported = new[] { "1.0", "1.1" };
     }
 
     /// <summary>
@@ -19,7 +22,13 @@ namespace TiaStudio.Contracts
         public const string ImportAndCompile = "ImportAndCompile";
         public const string UpgradeProject = "UpgradeProject";
 
-        public static readonly IReadOnlyList<string> All = new[] { GetCapabilities, ValidateJob, ImportAndCompile, UpgradeProject };
+        /// <summary>Csak olvasó: a PLC blokkjainak listája (protokoll 1.1).</summary>
+        public const string ListBlocks = "ListBlocks";
+
+        /// <summary>Csak olvasó: kijelölt blokkok exportja fájlba a könyvtár számára (protokoll 1.1).</summary>
+        public const string ExportBlocks = "ExportBlocks";
+
+        public static readonly IReadOnlyList<string> All = new[] { GetCapabilities, ValidateJob, ImportAndCompile, UpgradeProject, ListBlocks, ExportBlocks };
     }
 
     public static class TiaJobStatus
@@ -98,6 +107,13 @@ namespace TiaStudio.Contracts
 
         [JsonProperty("approval")]
         public ApprovalRecord Approval { get; set; }
+
+        /// <summary>ExportBlocks: létező, üres, abszolút mappa, ahová a worker az exportfájlokat írja.</summary>
+        [JsonProperty("export_directory")]
+        public string ExportDirectory { get; set; }
+
+        [JsonProperty("export_blocks")]
+        public List<ExportRequestItem> ExportBlocks { get; set; }
     }
 
     public sealed class ApprovalRecord
@@ -162,6 +178,12 @@ namespace TiaStudio.Contracts
 
         [JsonProperty("worker")]
         public WorkerInfo Worker { get; set; }
+
+        [JsonProperty("blocks")]
+        public List<ProjectBlockInfo> Blocks { get; set; }
+
+        [JsonProperty("exported_files")]
+        public List<ExportedBlockFile> ExportedFiles { get; set; }
 
         [JsonProperty("started_at_utc")]
         public string StartedAtUtc { get; set; }
@@ -311,5 +333,7 @@ namespace TiaStudio.Contracts
         public const string Hmi = "hmi";
         public const string SimaticMlImport = "simaticml_import";
         public const string PlcDownload = "plc_download";
+        public const string BlockExport = "block_export";
+        public const string SimaticMlBlockImport = "simaticml_block_import";
     }
 }
