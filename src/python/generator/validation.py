@@ -162,7 +162,9 @@ class _Validator:
         if self._present(target, "tia_version", "target.tia_version", True):
             value = target["tia_version"]
             if self._string(value, "target.tia_version") and value not in SUPPORTED_TIA_VERSIONS:
-                self.error("UNSUPPORTED_TIA_VERSION", "target.tia_version", f"TIA version '{value}' is not supported (V18, V19, V20)")
+                self.error(
+                    "UNSUPPORTED_TIA_VERSION", "target.tia_version", f"TIA version '{value}' is not supported (V18, V19, V20)"
+                )
         if self._present(target, "plc_name", "target.plc_name", True):
             self._ascii_identifier(target["plc_name"], "target.plc_name", _PLC_NAME_RE, "^[A-Za-z][A-Za-z0-9_-]{0,63}$")
         if self._present(target, "cpu_family", "target.cpu_family", True):
@@ -171,7 +173,9 @@ class _Validator:
                 if value in INPUT_BYTE_LIMITS:
                     self.input_byte_limit = INPUT_BYTE_LIMITS[value]
                 else:
-                    self.error("UNSUPPORTED_CPU_FAMILY", "target.cpu_family", f"CPU family '{value}' is not supported (S7-1200, S7-1500)")
+                    self.error(
+                        "UNSUPPORTED_CPU_FAMILY", "target.cpu_family", f"CPU family '{value}' is not supported (S7-1200, S7-1500)"
+                    )
         self._unknown_fields(target, _TARGET_FIELDS, "target")
 
     def devices(self, devices: Any) -> None:
@@ -220,7 +224,9 @@ class _Validator:
 
     def _generated_name(self, block_name: str, path: str) -> None:
         if len(block_name) > MAX_BLOCK_NAME_LENGTH:
-            self.error("GENERATED_NAME_TOO_LONG", path, f"Generated block name '{block_name}' exceeds {MAX_BLOCK_NAME_LENGTH} characters")
+            self.error(
+                "GENERATED_NAME_TOO_LONG", path, f"Generated block name '{block_name}' exceeds {MAX_BLOCK_NAME_LENGTH} characters"
+            )
         if block_name.upper() in (n.upper() for n in RESERVED_BLOCK_NAMES):
             self.error("GENERATED_NAME_COLLISION", path, f"Generated block name '{block_name}' is reserved")
 
@@ -233,7 +239,9 @@ class _Validator:
                 if self._present(inputs, name, f"{path}.inputs.{name}", True):
                     self.input_address(inputs[name], f"{path}.inputs.{name}")
             self._unknown_fields(inputs, _CYLINDER_INPUT_FIELDS, f"{path}.inputs")
-        if self._present(device, "parameters", f"{path}.parameters", False) and self._object(device["parameters"], f"{path}.parameters"):
+        if self._present(device, "parameters", f"{path}.parameters", False) and self._object(
+            device["parameters"], f"{path}.parameters"
+        ):
             parameters = device["parameters"]
             p = f"{path}.parameters.monitor_time_ms"
             if self._present(parameters, "monitor_time_ms", p, False):
@@ -241,7 +249,9 @@ class _Validator:
                 if not _is_integer(value):
                     self.error("INVALID_TYPE", p, f"Expected integer, got {_json_type(value)}")
                 elif not MONITOR_TIME_MIN_MS <= value <= MONITOR_TIME_MAX_MS:
-                    self.error("INVALID_VALUE", p, f"monitor_time_ms {value} is outside {MONITOR_TIME_MIN_MS}..{MONITOR_TIME_MAX_MS}")
+                    self.error(
+                        "INVALID_VALUE", p, f"monitor_time_ms {value} is outside {MONITOR_TIME_MIN_MS}..{MONITOR_TIME_MAX_MS}"
+                    )
             self._unknown_fields(parameters, _CYLINDER_PARAMETER_FIELDS, f"{path}.parameters")
         self._unknown_fields(device, _CYLINDER_FIELDS, path)
 
@@ -291,7 +301,9 @@ def _reject_constant(name: str) -> Any:
 def parse_json_bytes(data: bytes) -> tuple[Any, ValidationReport | None]:
     """UTF-8 JSON-bájtok szigorú beolvasása. Hibánál (None, riport)."""
     if len(data) > MAX_INPUT_BYTES:
-        return None, ValidationReport([Issue("error", "INPUT_TOO_LARGE", "$", f"Input is {len(data)} bytes; limit is {MAX_INPUT_BYTES}")])
+        return None, ValidationReport(
+            [Issue("error", "INPUT_TOO_LARGE", "$", f"Input is {len(data)} bytes; limit is {MAX_INPUT_BYTES}")]
+        )
     try:
         text = data.decode("utf-8")
         if text.startswith("﻿"):
@@ -310,7 +322,12 @@ def validate_document(doc: dict[str, Any]) -> ValidationReport:
     report = ValidationReport(validator.issues)
     if report.ok:
         report.issues.append(
-            Issue("warning", "IO_HW_NOT_VERIFIED", "devices", "I/O addresses were not checked against the TIA hardware configuration")
+            Issue(
+                "warning",
+                "IO_HW_NOT_VERIFIED",
+                "devices",
+                "I/O addresses were not checked against the TIA hardware configuration",
+            )
         )
     return report
 

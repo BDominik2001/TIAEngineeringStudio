@@ -6,8 +6,8 @@ import json
 import re
 import unittest
 
-from generator import validation
 from _support import CASES_FILE, CONTRACTS, REPO_ROOT
+from generator import validation
 
 
 class ContractCasesTest(unittest.TestCase):

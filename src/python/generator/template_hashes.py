@@ -17,10 +17,7 @@ from .render import TEMPLATE_DIR, TEMPLATE_SET_FILE
 
 
 def current_hashes() -> dict[str, str]:
-    return {
-        p.name: hashlib.sha256(p.read_bytes()).hexdigest()
-        for p in sorted(TEMPLATE_DIR.glob("*.tmpl"))
-    }
+    return {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(TEMPLATE_DIR.glob("*.tmpl"))}
 
 
 def main(argv: list[str]) -> int:

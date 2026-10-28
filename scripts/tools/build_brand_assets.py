@@ -10,6 +10,7 @@ Ezután a mesterképekből mindig újraépülnek a származtatott fájlok:
   src/csharp/Desktop/Assets/logo-mark.png   ikon keret nélkül (fejléc, kezdőlap, nyitókép 1. fázis)
   src/csharp/Desktop/Assets/logo-full.png   teljes logó felirattal (nyitókép 2. fázis)
 """
+
 import argparse
 import os
 import sys
@@ -48,7 +49,8 @@ def main():
     masters = {name: Image.open(os.path.join(BRAND, name)).convert("RGBA") for name in MASTERS}
     os.makedirs(ASSETS, exist_ok=True)
     masters["icon-frame.png"].save(
-        os.path.join(ASSETS, "app.ico"), sizes=[(s, s) for s in (16, 20, 24, 32, 40, 48, 64, 128, 256)])
+        os.path.join(ASSETS, "app.ico"), sizes=[(s, s) for s in (16, 20, 24, 32, 40, 48, 64, 128, 256)]
+    )
     masters["icon.png"].resize((512, 512), Image.LANCZOS).save(os.path.join(ASSETS, "logo-mark.png"), optimize=True)
     masters["logo-full.png"].save(os.path.join(ASSETS, "logo-full.png"), optimize=True)
     return 0

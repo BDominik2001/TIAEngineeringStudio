@@ -11,12 +11,12 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
+from _support import EXAMPLES, GOLDEN_DIR, device, load_example
 from generator import main as cli
 from generator import render
 from generator.manifest import is_safe_relative_path, verify_package
 from generator.models import MachineProject
 from generator.validation import MAX_DEVICES, validate_document
-from _support import EXAMPLES, GOLDEN_DIR, device, load_example
 
 VERSIONS = ("V18", "V19", "V20")
 
@@ -64,7 +64,12 @@ class RenderTest(unittest.TestCase):
     def test_import_order_and_block_names(self) -> None:
         files = render_example("V18")
         self.assertEqual(
-            ["sources/FB_Cylinder.scl", "sources/DB_Cylinder_CYL_01.db", "sources/DB_Cylinder_CYL_02.db", "sources/FC_Cylinders.scl"],
+            [
+                "sources/FB_Cylinder.scl",
+                "sources/DB_Cylinder_CYL_01.db",
+                "sources/DB_Cylinder_CYL_02.db",
+                "sources/FC_Cylinders.scl",
+            ],
             [f.relative_path for f in files],
         )
         self.assertEqual(

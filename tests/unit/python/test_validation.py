@@ -4,8 +4,8 @@ import copy
 import json
 import unittest
 
-from generator import validation
 from _support import device, load_example
+from generator import validation
 
 
 def codes(data: bytes) -> list[str]:
