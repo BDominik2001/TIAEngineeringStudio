@@ -88,9 +88,10 @@ namespace TiaStudio.UnitTests
             int order = 1;
             foreach (string block in Blocks)
             {
-                string relative = "sources/" + block + ".scl";
+                string fileName = FileName(block);
+                string relative = "sources/" + fileName;
                 byte[] content = Encoding.ASCII.GetBytes("// " + block + "\r\n");
-                File.WriteAllBytes(System.IO.Path.Combine(root, "sources", block + ".scl"), content);
+                File.WriteAllBytes(System.IO.Path.Combine(root, "sources", fileName), content);
                 manifest.Files.Add(new ManifestFile
                 {
                     RelativePath = relative,
@@ -104,6 +105,12 @@ namespace TiaStudio.UnitTests
             string manifestPath = System.IO.Path.Combine(root, GenerationManifest.FileName);
             File.WriteAllText(manifestPath, ProtocolJson.Serialize(manifest), new UTF8Encoding(false));
             return manifestPath;
+        }
+
+        /// <summary>A generátorral egyezően: adatblokk .db, kódblokk .scl.</summary>
+        public static string FileName(string block)
+        {
+            return block + (block.StartsWith("DB_", StringComparison.Ordinal) ? ".db" : ".scl");
         }
 
         /// <summary>sandboxRoot/V18/Demo/Demo.ap18 + marker.</summary>

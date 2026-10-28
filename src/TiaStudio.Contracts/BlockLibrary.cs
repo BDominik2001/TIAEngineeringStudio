@@ -253,6 +253,10 @@ namespace TiaStudio.Contracts
             {
                 return "Only SCL code blocks, data blocks and PLC data types can be exported as external source; use SimaticML";
             }
+            if (format == BlockFormats.SimaticMl && !SupportsSimaticMl(block.BlockType, block.DbKind))
+            {
+                return "SimaticML export/import supports FB, FC, global DB and PLC data types only; store instance/array DBs as external source (.db)";
+            }
             return null;
         }
 
@@ -280,6 +284,10 @@ namespace TiaStudio.Contracts
             if (item.Format == BlockFormats.ExternalSource && !SupportsExternalSource(item.BlockType, item.ProgrammingLanguage))
             {
                 return Tuple.Create(ErrorCodes.LibraryItemNotAllowed, "External source is not valid for " + item.BlockType + "/" + item.ProgrammingLanguage);
+            }
+            if (item.Format == BlockFormats.SimaticMl && !SupportsSimaticMl(item.BlockType, item.DbKind))
+            {
+                return Tuple.Create(ErrorCodes.LibraryItemNotAllowed, "SimaticML import supports FB, FC, global DB and PLC data types only");
             }
             if (item.Format == BlockFormats.SimaticMl && item.SourceTiaVersion != targetTiaVersion)
             {
@@ -379,6 +387,26 @@ namespace TiaStudio.Contracts
             return null;
         }
 
+        /// <summary>
+        /// TIA Portal Openness V18 kézikönyv 6.4.1.12/6.4.1.13 (blokkok: FB, FC, OB, globális DB) és
+        /// 6.4.1.27/6.4.1.28 (PLC-adattípusok). Példány- és tömb-DB XML-exportja nem dokumentált.
+        /// </summary>
+        private static bool SupportsSimaticMl(string blockType, string dbKind)
+        {
+            switch (blockType)
+            {
+                case BlockTypes.FB:
+                case BlockTypes.FC:
+                case BlockTypes.UDT:
+                    return true;
+                case BlockTypes.DB:
+                    return dbKind == DbKinds.Global;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>V18 kézikönyv 5.11.3.18: forrásgenerálás csak STL/SCL blokkokból, DB-kből és UDT-kből (STL itt kizárva).</summary>
         private static bool SupportsExternalSource(string blockType, string language)
         {
             switch (blockType)

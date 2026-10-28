@@ -306,7 +306,7 @@ namespace TiaStudio.TiaAdapter.Common
             }
             catch (Exception ex)
             {
-                Finish(result, TiaJobStatus.Blocked, OpennessErrorClassifier.Classify(ex, ErrorCodes.ProjectNotFound), "Project cannot be opened without upgrade: " + ex.Message, SandboxStates.NotTouched);
+                Finish(result, TiaJobStatus.Blocked, OpennessErrorClassifier.Classify(ex, ErrorCodes.ProjectOpenFailed), "Project cannot be opened without upgrade (it must not be open in another TIA Portal instance and must be writable): " + ex.Message, SandboxStates.NotTouched);
                 return;
             }
             try
@@ -385,7 +385,8 @@ namespace TiaStudio.TiaAdapter.Common
                 }
                 catch (Exception ex)
                 {
-                    Finish(result, TiaJobStatus.Failed, OpennessErrorClassifier.Classify(ex, ErrorCodes.ImportFailed), "Import of " + file.RelativePath + " failed: " + ex.Message, SandboxStates.ModifiedNotSaved);
+                    string code = OpennessErrorClassifier.Classify(ex, ErrorCodes.ImportFailed);
+                    Finish(result, TiaJobStatus.Failed, code, "Import of " + file.RelativePath + " failed: " + ex.Message, StateAfterFailure(code, SandboxStates.ModifiedNotSaved));
                     return;
                 }
                 result.Messages.Add(new TiaMessage(MessageSeverity.Info, null,
@@ -399,7 +400,8 @@ namespace TiaStudio.TiaAdapter.Common
             }
             catch (Exception ex)
             {
-                Finish(result, TiaJobStatus.Failed, OpennessErrorClassifier.Classify(ex, ErrorCodes.CompileError), "Offline compile could not run: " + ex.Message, SandboxStates.ModifiedNotSaved);
+                string code = OpennessErrorClassifier.Classify(ex, ErrorCodes.CompileError);
+                Finish(result, TiaJobStatus.Failed, code, "Offline compile could not run (a password-protected safety program also prevents compiling): " + ex.Message, StateAfterFailure(code, SandboxStates.ModifiedNotSaved));
                 return;
             }
             result.Compile = compile;
@@ -521,7 +523,7 @@ namespace TiaStudio.TiaAdapter.Common
             }
             catch (Exception ex)
             {
-                Finish(result, TiaJobStatus.Blocked, OpennessErrorClassifier.Classify(ex, ErrorCodes.ProjectNotFound), "Project cannot be opened without upgrade: " + ex.Message, SandboxStates.NotTouched);
+                Finish(result, TiaJobStatus.Blocked, OpennessErrorClassifier.Classify(ex, ErrorCodes.ProjectOpenFailed), "Project cannot be opened without upgrade (it must not be open in another TIA Portal instance and must be writable): " + ex.Message, SandboxStates.NotTouched);
                 return;
             }
             try
@@ -531,6 +533,12 @@ namespace TiaStudio.TiaAdapter.Common
                 if (plc == null)
                 {
                     Finish(result, TiaJobStatus.Blocked, ErrorCodes.PlcNotFound, "PLC '" + command.PlcName + "' not found in the project", SandboxStates.Unchanged);
+                    return;
+                }
+                if (export && !plc.IsOffline())
+                {
+                    // V18 kézikönyv 5.11.3.18 / 6.4.1.13: forrásgenerálás és export csak offline PLC-vel.
+                    Finish(result, TiaJobStatus.Blocked, ErrorCodes.PlcOnline, "PLC '" + plc.Name + "' is online; export is offline-only", SandboxStates.Unchanged);
                     return;
                 }
                 List<ProjectBlockInfo> blocks = plc.DescribeBlocks().ToList();
@@ -624,7 +632,8 @@ namespace TiaStudio.TiaAdapter.Common
                 }
                 catch (Exception ex)
                 {
-                    Finish(result, TiaJobStatus.Failed, OpennessErrorClassifier.Classify(ex, ErrorCodes.ExportFailed), "Export of " + block.Name + " failed: " + ex.Message, SandboxStates.Unchanged);
+                    string code = OpennessErrorClassifier.Classify(ex, ErrorCodes.ExportFailed);
+                    Finish(result, TiaJobStatus.Failed, code, "Export of " + block.Name + " failed: " + ex.Message, StateAfterFailure(code, SandboxStates.Unchanged));
                     return;
                 }
                 if (!File.Exists(path))
@@ -658,6 +667,12 @@ namespace TiaStudio.TiaAdapter.Common
             }
             result.Blocks = selected.Select(p => p.Item2).ToList();
             Finish(result, TiaJobStatus.Success, null, "Exported " + selected.Count + " block(s); project not modified", SandboxStates.Unchanged);
+        }
+
+        /// <summary>Ha a TIA Portal leállt, semmit nem állíthatunk a sandboxról.</summary>
+        private static string StateAfterFailure(string errorCode, string otherwise)
+        {
+            return errorCode == ErrorCodes.TiaPortalTerminated ? SandboxStates.Unknown : otherwise;
         }
 
         private static string SourcePath(TiaCommand command, string relativePath)

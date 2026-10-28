@@ -90,7 +90,8 @@ namespace TiaStudio.Infrastructure.Tia
 
     /// <summary>
     /// Telepített TIA Portal Openness verziók felderítése a
-    /// HKLM\SOFTWARE\Siemens\Automation\Openness\&lt;verzió&gt;\PublicAPI\&lt;assembly-verzió&gt; ágból (spec 3.4).
+    /// HKLM\SOFTWARE\Siemens\Automation\Openness\&lt;verzió&gt;\PublicAPI\&lt;assembly-verzió&gt; ágból
+    /// (spec 3.4, Openness V18 kézikönyv 5.2.2: "Siemens.Engineering", "PublicKeyToken", "AssemblyVersion" értékek).
     /// A tényleges kulcsszerkezetet toleránsan kezeli; verziót soha nem helyettesít másikkal.
     /// </summary>
     public sealed class RegistryTiaInstallationDiscovery : ITiaInstallationDiscovery
@@ -177,6 +178,17 @@ namespace TiaStudio.Infrastructure.Tia
             if (!string.Equals(identity.Item2, SiemensPublicKeyToken, StringComparison.OrdinalIgnoreCase))
             {
                 info.Notes.Add("Unexpected public key token " + identity.Item2);
+                return info;
+            }
+            // V18 kézikönyv 5.2.2: a kulcs PublicKeyToken és AssemblyVersion értéket is tartalmaz.
+            if (values.TryGetValue("PublicKeyToken", out string registryToken) && !string.Equals(registryToken, identity.Item2, StringComparison.OrdinalIgnoreCase))
+            {
+                info.Notes.Add("Registry PublicKeyToken " + registryToken + " differs from the DLL (" + identity.Item2 + ")");
+                return info;
+            }
+            if (values.TryGetValue("AssemblyVersion", out string registryVersion) && registryVersion != identity.Item1.ToString())
+            {
+                info.Notes.Add("Registry AssemblyVersion " + registryVersion + " differs from the DLL (" + identity.Item1 + ")");
                 return info;
             }
             if (string.IsNullOrEmpty(info.WorkerPath) || !assemblies.FileExists(info.WorkerPath))

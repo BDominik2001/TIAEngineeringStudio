@@ -275,6 +275,12 @@ namespace TiaStudio.TiaAdapter.Openness
         }
     }
 
+    /// <summary>
+    /// PLC-szoftver elérése a TIA Portal Openness V18 kézikönyv (12/2022) szerint. Hivatkozások:
+    /// blokkcsoportok 5.11.3.1-5.11.3.4, külső források 5.11.3.17-5.11.3.19, blokkexport/-import
+    /// 6.4.1.12/6.4.1.13, UDT-export/-import 6.4.1.27/6.4.1.28, fordítás 5.3 (ICompilable),
+    /// online állapot 5.11.2.5 (OnlineProvider), attribútumok 5.2.23.
+    /// </summary>
     internal sealed class OpennessPlcTarget : IPlcTarget
     {
         private const int MaxCompileMessages = 5000;
@@ -299,36 +305,45 @@ namespace TiaStudio.TiaAdapter.Openness
         public IReadOnlyList<ExistingObject> GetAllBlocksAndTypes()
         {
             List<ExistingObject> result = new List<ExistingObject>();
-            CollectBlocks(software.BlockGroup, "Program blocks", result);
+            foreach (Tuple<PlcBlock, string> entry in UserBlocks())
+            {
+                result.Add(new ExistingObject(entry.Item1.Name, entry.Item2));
+            }
+            // 5.11.3.2/5.11.3.3: rendszerblokk-csoportok (PlcSystemBlockGroup.Groups rekurzívan).
             foreach (PlcSystemBlockGroup systemGroup in software.BlockGroup.SystemBlockGroups)
             {
-                CollectBlocks(systemGroup, "Program blocks/System blocks/" + systemGroup.Name, result);
+                CollectSystemBlocks(systemGroup, "Program blocks/System blocks/" + systemGroup.Name, result);
             }
-            CollectTypes(software.TypeGroup, "PLC data types", result);
-            foreach (PlcSystemTypeGroup systemTypes in software.TypeGroup.SystemTypeGroups)
+            foreach (Tuple<PlcType, string> entry in UserTypes())
             {
-                CollectTypes(systemTypes, "PLC data types/System data types/" + systemTypes.Name, result);
+                result.Add(new ExistingObject(entry.Item1.Name, entry.Item2));
             }
             return result;
         }
 
         public IReadOnlyList<ExistingObject> GetExternalSources()
         {
+            // 5.11.3.17: az "External source files" mappa csoportjai Opennessből nem érhetők el.
             List<ExistingObject> result = new List<ExistingObject>();
-            CollectSources(software.ExternalSourceGroup, "External source files", result);
+            foreach (PlcExternalSource source in software.ExternalSourceGroup.ExternalSources)
+            {
+                result.Add(new ExistingObject(source.Name, "External source files"));
+            }
             return result;
         }
 
         public void ImportExternalSource(string externalSourceName, string filePath)
         {
-            // V18 kézikönyv: GenerateBlocksFromSource felülírhat meglévő blokkot – ezért fut előtte
-            // a teljes rekurzív ütközésvizsgálat, és csak jóváhagyott sandboxban hívható.
+            // 5.11.3.17: csak .scl/.db/.udt/.awl; 5.11.3.19: csak ASCII forrás, meglévő blokkot FELÜLÍR –
+            // ezért fut előtte a teljes rekurzív ütközésvizsgálat, és csak jóváhagyott sandboxban hívható.
+            // Hiba esetén a projekt a hívás előtti állapotba áll vissza.
             PlcExternalSource source = software.ExternalSourceGroup.ExternalSources.CreateFromFile(externalSourceName, filePath);
             source.GenerateBlocksFromSource();
         }
 
         public CompileReport CompileOffline()
         {
+            // 5.3: minden eszköznek offline-nak kell lennie; jelszóval védett safety program fordítása bejelentkezés nélkül kivételt ad.
             ICompilable compilable = software.GetService<ICompilable>();
             if (compilable == null)
             {
@@ -348,42 +363,77 @@ namespace TiaStudio.TiaAdapter.Openness
         public IReadOnlyList<ProjectBlockInfo> DescribeBlocks()
         {
             List<ProjectBlockInfo> result = new List<ProjectBlockInfo>();
-            DescribeBlockGroup(software.BlockGroup, "Program blocks", result);
-            DescribeTypeGroup(software.TypeGroup, "PLC data types", result);
+            foreach (Tuple<PlcBlock, string> entry in UserBlocks())
+            {
+                PlcBlock block = entry.Item1;
+                string language = block.ProgrammingLanguage.ToString();
+                result.Add(new ProjectBlockInfo
+                {
+                    Name = block.Name,
+                    BlockType = block is FB ? BlockTypes.FB : block is FC ? BlockTypes.FC : block is OB ? BlockTypes.OB
+                        : block is GlobalDB || block is InstanceDB || block is ArrayDB ? BlockTypes.DB : "Unknown",
+                    DbKind = block is InstanceDB ? DbKinds.Instance : block is ArrayDB ? DbKinds.Array : block is GlobalDB ? DbKinds.Global : null,
+                    Number = block.Number,
+                    ProgrammingLanguage = language,
+                    Location = entry.Item2,
+                    IsKnowHowProtected = BoolAttribute(block, "IsKnowHowProtected"),
+                    IsConsistent = block.IsConsistent,
+                    IsSafety = LibraryRules.IsSafetyLanguage(language),
+                });
+            }
+            foreach (Tuple<PlcType, string> entry in UserTypes())
+            {
+                // 5.2.23: UDT-n nincs ProgrammingLanguage; IsConsistent és IsKnowHowProtected olvasható attribútum.
+                result.Add(new ProjectBlockInfo
+                {
+                    Name = entry.Item1.Name,
+                    BlockType = BlockTypes.UDT,
+                    Location = entry.Item2,
+                    IsKnowHowProtected = BoolAttribute(entry.Item1, "IsKnowHowProtected"),
+                    IsConsistent = BoolAttribute(entry.Item1, "IsConsistent"),
+                });
+            }
             return result;
         }
 
         public void ExportBlock(ProjectBlockInfo block, string format, string filePath)
         {
-            // Mindkét út csak fájlt ír; a projektet nem módosítja és nem menti.
+            // Mindkét út csak fájlt ír; a projektet nem módosítja és nem menti. A célfájl nem létezhet.
             FileInfo target = new FileInfo(filePath);
             if (block.BlockType == BlockTypes.UDT)
             {
-                PlcType type = FindType(software.TypeGroup, block.Name) ?? throw new OpennessException(ErrorCodes.BlockNotFound, "PLC data type " + block.Name + " not found");
+                PlcType type = UserTypes().Select(t => t.Item1).FirstOrDefault(t => t.Name == block.Name)
+                    ?? throw new OpennessException(ErrorCodes.BlockNotFound, "PLC data type " + block.Name + " not found");
                 if (format == BlockFormats.SimaticMl)
                 {
                     type.Export(target, ExportOptions.WithDefaults);
                 }
                 else
                 {
+                    // 5.11.3.18: UDT-forrás csak *.udt kiterjesztéssel; GenerateOptions.None = csak a megadott objektum.
                     software.ExternalSourceGroup.GenerateSource(new IGenerateSource[] { type }, target, GenerateOptions.None);
                 }
                 return;
             }
-            PlcBlock plcBlock = FindBlock(software.BlockGroup, block.Name) ?? throw new OpennessException(ErrorCodes.BlockNotFound, "Block " + block.Name + " not found");
+            PlcBlock plcBlock = UserBlocks().Select(b => b.Item1).FirstOrDefault(b => b.Name == block.Name)
+                ?? throw new OpennessException(ErrorCodes.BlockNotFound, "Block " + block.Name + " not found");
             if (format == BlockFormats.SimaticMl)
             {
+                // 6.4.1.13: csak konzisztens blokk exportálható.
                 plcBlock.Export(target, ExportOptions.WithDefaults);
             }
             else
             {
+                // 5.11.3.18: csak STL/SCL blokk, *.scl / *.db kiterjesztés.
                 software.ExternalSourceGroup.GenerateSource(new IGenerateSource[] { plcBlock }, target, GenerateOptions.None);
             }
         }
 
         public void ImportSimaticMl(string blockType, string filePath)
         {
-            // ImportOptions.None: meglévő objektumot nem ír felül (az ütközésvizsgálat előtte lefutott).
+            // 6.1.6: ImportOptions.None – meglévő objektumnál kivétel, nincs felülírás (az ütközésvizsgálat előtte lefutott).
+            // 6.4.1.12: hiányzó példány-DB nem jön létre automatikusan; hivatkozott UDT/FB hiánya hibát ad
+            // (ezért az importsorrend UDT → FC → FB → DB).
             if (blockType == BlockTypes.UDT)
             {
                 software.TypeGroup.Types.Import(new FileInfo(filePath), ImportOptions.None);
@@ -394,84 +444,75 @@ namespace TiaStudio.TiaAdapter.Openness
             }
         }
 
-        private static void DescribeBlockGroup(PlcBlockGroup group, string location, List<ProjectBlockInfo> output)
+        /// <summary>A "Program blocks" gyökér és minden felhasználói alcsoport blokkjai (5.11.3.4).</summary>
+        private IEnumerable<Tuple<PlcBlock, string>> UserBlocks()
+        {
+            foreach (PlcBlock block in software.BlockGroup.Blocks)
+            {
+                yield return Tuple.Create(block, "Program blocks");
+            }
+            Stack<Tuple<PlcBlockUserGroup, string>> pending = new Stack<Tuple<PlcBlockUserGroup, string>>();
+            foreach (PlcBlockUserGroup group in software.BlockGroup.Groups)
+            {
+                pending.Push(Tuple.Create(group, "Program blocks/" + group.Name));
+            }
+            while (pending.Count > 0)
+            {
+                Tuple<PlcBlockUserGroup, string> current = pending.Pop();
+                foreach (PlcBlock block in current.Item1.Blocks)
+                {
+                    yield return Tuple.Create(block, current.Item2);
+                }
+                foreach (PlcBlockUserGroup child in current.Item1.Groups)
+                {
+                    pending.Push(Tuple.Create(child, current.Item2 + "/" + child.Name));
+                }
+            }
+        }
+
+        /// <summary>A "PLC data types" gyökér és minden felhasználói alcsoport típusai.</summary>
+        private IEnumerable<Tuple<PlcType, string>> UserTypes()
+        {
+            foreach (PlcType type in software.TypeGroup.Types)
+            {
+                yield return Tuple.Create(type, "PLC data types");
+            }
+            Stack<Tuple<PlcTypeUserGroup, string>> pending = new Stack<Tuple<PlcTypeUserGroup, string>>();
+            foreach (PlcTypeUserGroup group in software.TypeGroup.Groups)
+            {
+                pending.Push(Tuple.Create(group, "PLC data types/" + group.Name));
+            }
+            while (pending.Count > 0)
+            {
+                Tuple<PlcTypeUserGroup, string> current = pending.Pop();
+                foreach (PlcType type in current.Item1.Types)
+                {
+                    yield return Tuple.Create(type, current.Item2);
+                }
+                foreach (PlcTypeUserGroup child in current.Item1.Groups)
+                {
+                    pending.Push(Tuple.Create(child, current.Item2 + "/" + child.Name));
+                }
+            }
+        }
+
+        private static void CollectSystemBlocks(PlcSystemBlockGroup group, string location, List<ExistingObject> output)
         {
             foreach (PlcBlock block in group.Blocks)
             {
-                string language = block.ProgrammingLanguage.ToString();
-                output.Add(new ProjectBlockInfo
-                {
-                    Name = block.Name,
-                    BlockType = block is FB ? BlockTypes.FB : block is FC ? BlockTypes.FC : block is OB ? BlockTypes.OB
-                        : block is GlobalDB || block is InstanceDB || block is ArrayDB ? BlockTypes.DB : "Unknown",
-                    DbKind = block is InstanceDB ? DbKinds.Instance : block is ArrayDB ? DbKinds.Array : block is GlobalDB ? DbKinds.Global : null,
-                    Number = block.Number,
-                    ProgrammingLanguage = language,
-                    Location = location,
-                    IsKnowHowProtected = block.IsKnowHowProtected,
-                    IsConsistent = block.IsConsistent,
-                    IsSafety = LibraryRules.IsSafetyLanguage(language),
-                });
+                output.Add(new ExistingObject(block.Name, location));
             }
-            foreach (PlcBlockUserGroup child in group.Groups)
+            foreach (PlcSystemBlockGroup child in group.Groups)
             {
-                DescribeBlockGroup(child, location + "/" + child.Name, output);
+                CollectSystemBlocks(child, location + "/" + child.Name, output);
             }
         }
 
-        private static void DescribeTypeGroup(PlcTypeGroup group, string location, List<ProjectBlockInfo> output)
+        /// <summary>5.2.23: logikai attribútum olvasása GetAttribute-tal (blokkra és UDT-re is dokumentált).</summary>
+        private static bool BoolAttribute(IEngineeringObject engineeringObject, string name)
         {
-            foreach (PlcType type in group.Types)
-            {
-                output.Add(new ProjectBlockInfo
-                {
-                    Name = type.Name,
-                    BlockType = BlockTypes.UDT,
-                    Location = location,
-                    IsKnowHowProtected = type.IsKnowHowProtected,
-                    IsConsistent = type.IsConsistent,
-                });
-            }
-            foreach (PlcTypeUserGroup child in group.Groups)
-            {
-                DescribeTypeGroup(child, location + "/" + child.Name, output);
-            }
-        }
-
-        private static PlcBlock FindBlock(PlcBlockGroup group, string name)
-        {
-            PlcBlock found = group.Blocks.Find(name);
-            if (found != null)
-            {
-                return found;
-            }
-            foreach (PlcBlockUserGroup child in group.Groups)
-            {
-                found = FindBlock(child, name);
-                if (found != null)
-                {
-                    return found;
-                }
-            }
-            return null;
-        }
-
-        private static PlcType FindType(PlcTypeGroup group, string name)
-        {
-            PlcType found = group.Types.Find(name);
-            if (found != null)
-            {
-                return found;
-            }
-            foreach (PlcTypeUserGroup child in group.Groups)
-            {
-                found = FindType(child, name);
-                if (found != null)
-                {
-                    return found;
-                }
-            }
-            return null;
+            object value = engineeringObject.GetAttribute(name);
+            return value is bool flag && flag;
         }
 
         private static void Flatten(CompilerResultMessageComposition messages, int depth, List<CompileMessage> output)
@@ -492,42 +533,6 @@ namespace TiaStudio.TiaAdapter.Openness
                     WarningCount = message.WarningCount,
                 });
                 Flatten(message.Messages, depth + 1, output);
-            }
-        }
-
-        private static void CollectBlocks(PlcBlockGroup group, string location, List<ExistingObject> output)
-        {
-            foreach (PlcBlock block in group.Blocks)
-            {
-                output.Add(new ExistingObject(block.Name, location));
-            }
-            foreach (PlcBlockUserGroup child in group.Groups)
-            {
-                CollectBlocks(child, location + "/" + child.Name, output);
-            }
-        }
-
-        private static void CollectTypes(PlcTypeGroup group, string location, List<ExistingObject> output)
-        {
-            foreach (PlcType type in group.Types)
-            {
-                output.Add(new ExistingObject(type.Name, location));
-            }
-            foreach (PlcTypeUserGroup child in group.Groups)
-            {
-                CollectTypes(child, location + "/" + child.Name, output);
-            }
-        }
-
-        private static void CollectSources(PlcExternalSourceGroup group, string location, List<ExistingObject> output)
-        {
-            foreach (PlcExternalSource source in group.ExternalSources)
-            {
-                output.Add(new ExistingObject(source.Name, location));
-            }
-            foreach (PlcExternalSourceUserGroup child in group.Groups)
-            {
-                CollectSources(child, location + "/" + child.Name, output);
             }
         }
     }

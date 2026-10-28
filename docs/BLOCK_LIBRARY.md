@@ -35,7 +35,12 @@ egyszerű, Git-be tehető mappaszerkezet SHA-256 integritással. A natív globá
 | Formátum | Mire jó | Import célverziója |
 |---|---|---|
 | **SCL forrás** (`external_source`: `.scl` / `.db` / `.udt`) | SCL-nyelvű FB/FC, adatbázisok, PLC-adattípusok | bármely V18/V19/V20 – a célverzió offline fordítása dönti el a kompatibilitást (figyelmeztetés jelzi, ha más verzióból származik) |
-| **SimaticML** (`simaticml`: `.xml`) | bármely nyelv (LAD, FBD, SCL, DB, UDT) | **csak** az a TIA-verzió, amelyből exportálták (`LIBRARY_VERSION_MISMATCH`) – spec 3.3 |
+| **SimaticML** (`simaticml`: `.xml`) | FB, FC (bármely nyelv: LAD, FBD, GRAPH, SCL, STL), **globális** DB, PLC-adattípus | **csak** az a TIA-verzió, amelyből exportálták (`LIBRARY_VERSION_MISMATCH`) – spec 3.3 |
+
+A V18 Openness kézikönyv (6.4.1.12/6.4.1.13) a blokkok XML-exportját/-importját FB, FC, OB és
+**globális** DB esetén dokumentálja, ezért példány- és tömb-DB csak SCL-forrásként (`.db`) kerülhet a
+könyvtárba. A forrásgenerálás (5.11.3.18) csak SCL/STL kódblokkra, DB-re és UDT-re működik; az STL-t
+(`.awl`) a könyvtár nem kezeli.
 
 Exportálásnál a felület blokkonként csak az engedett formátumokat kínálja (LAD/FBD blokkhoz csak SimaticML-t).
 
@@ -59,7 +64,7 @@ Exportálásnál a felület blokkonként csak az engedett formátumokat kínálj
    exportálhatósággal és az okkal, ha nem exportálható.
 3. Könyvtár kiválasztása (vagy létrehozása), blokkok kipipálása, formátum, leírás → *Kipipáltak exportja a könyvtárba*.
 
-A worker `ExportBlocks` művelete csak olvas: `PlcExternalSourceSystemGroup.GenerateSource` vagy
+A worker `ExportBlocks` művelete csak olvas, és csak **offline** PLC-vel fut (kézikönyv 5.11.3.18, 6.4.1.13): `PlcExternalSourceSystemGroup.GenerateSource` vagy
 `PlcBlock/PlcType.Export` egy új, üres mappába, a projektet nem menti (`sandbox_state = Unchanged`).
 A főalkalmazás minden exportált fájl hash-ét újraméri, és csak **teljes siker** esetén veszi fel az
 elemeket (részleges export: semmi nem kerül a könyvtárba).
@@ -84,8 +89,12 @@ A gépmodell bármely szerkesztése visszaváltja a munkafolyamatot gépmodell-m
 ## Korlátok (MVP)
 
 - Az import a PLC „Program blocks" / „PLC data types" gyökerébe kerül (csoportstruktúra nem öröklődik).
-- Függőségek (pl. FB által hívott FC, használt UDT) nem kerülnek automatikusan a választásba: a
-  hiányzó függőséget a célverzió fordítása `COMPILE_ERROR`-ral jelzi, és a projekt nem mentődik.
+- Függőségek (pl. FB által hívott FC, használt UDT) nem kerülnek automatikusan a választásba. SimaticML
+  importnál a hiányzó hivatkozott objektum már az importot megállítja (`IMPORT_FAILED`, kézikönyv 6.4.1.14);
+  SCL-forrásnál a célverzió fordítása jelzi (`COMPILE_ERROR`). A projekt egyik esetben sem mentődik.
+- XML-importnál a példányspecifikus attribútumok (pl. kezdőértékek) bizonyos esetekben elveszhetnek (kézikönyv 2.1).
+- A blokkok a gyökércsoportba kerülnek. A kézikönyv (5.11.3.27) leírja a felhasználói csoportba generálást
+  (`GenerateBlocksFromSource(PlcBlockUserGroup, GenerateBlockOption)`); ez későbbi bővítés lehet.
 - PLC-tag-táblák nem részei a könyvtárnak.
 - A valódi Openness-hívásokat (`GenerateSource`, `Export`, `Import`) még nem igazolta integrációs
   teszt; lásd [COMPATIBILITY_MATRIX.md](COMPATIBILITY_MATRIX.md) és

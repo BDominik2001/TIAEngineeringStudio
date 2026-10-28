@@ -64,6 +64,10 @@ class RenderTest(unittest.TestCase):
     def test_import_order_and_block_names(self) -> None:
         files = render_example("V18")
         self.assertEqual(
+            ["sources/FB_Cylinder.scl", "sources/DB_Cylinder_CYL_01.db", "sources/DB_Cylinder_CYL_02.db", "sources/FC_Cylinders.scl"],
+            [f.relative_path for f in files],
+        )
+        self.assertEqual(
             ["FB_Cylinder", "DB_Cylinder_CYL_01", "DB_Cylinder_CYL_02", "FC_Cylinders"],
             [f.block_name for f in files],
         )

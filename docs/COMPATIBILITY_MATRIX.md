@@ -34,29 +34,46 @@ Jelmagyarázat: ✅ igazolt (dátum, gép, TIA Update a naplóban) · ⏳ nem fu
 |---|---|---|---|---|---|---|
 | – | – | – | – | – | még nem futott | – |
 
-## Valódi Openness API-n igazolandó pontok
+## Openness API – összevetés a V18 kézikönyvvel
 
-Az `OpennessShared/OpennessBackend.cs` a V18 kézikönyv alapján készült, és egy helyi API-csonk ellen
-fordításilag ellenőrizve van, de a tényleges Siemens assembly-kkel még nem. Az első V18 buildnél és
-futásnál ellenőrizendő:
+Forrás: *TIA Portal Openness: API for automation of engineering workflows*, System Manual, 12/2022
+(V18, 1388 oldal; a felhasználó által csatolt PDF – Siemens-dokumentum, a repóba nem kerül).
+Jelmagyarázat: 📘 a kézikönyv megerősíti · 🔧 a kézikönyv alapján javítva · ⏳ futásidőben (valódi TIA-val) igazolandó.
 
-1. `PlcBlockSystemGroup.SystemBlockGroups` elemei `PlcBlockGroup`-ként bejárhatók-e (`PlcSystemBlockGroup`).
-2. `PlcTypeSystemGroup.SystemTypeGroups` és a `PlcSystemTypeGroup` típusnév/öröklés.
-3. `PlcExternalSourceGroup` közös ősosztály megléte (`ExternalSources`, `Groups`).
-4. `Project.UngroupedDevicesGroup.Devices` és `Project.Devices` viszonya (duplikáció-szűrés megvan).
-5. `PlcSoftware.Name` vs. CPU `DeviceItem.Name` – melyik egyezik a gépmodell `plc_name`-jével.
-6. `OnlineProvider` szolgáltatás elérhetősége a CPU `DeviceItem`-en offline projektben.
-7. A generált SCL (`TON_TIME` multi-instance, abszolút `%I` címzés optimalizált FC-ben, `REGION`) fordul-e S7-1200 és S7-1500 CPU-n; létrehoz-e a TIA automatikus tag-bejegyzéseket az abszolút címekhez.
-8. A licenc-, UMAC- és frissítési hibák tényleges kivételtípusai/üzenetei (`OpennessErrorClassifier`).
-9. `[STAThread]` szükségessége `WithoutUserInterface` módban.
-10. Blokk-könyvtár: `PlcExternalSourceSystemGroup.GenerateSource(IEnumerable<IGenerateSource>, FileInfo, GenerateOptions)` megléte V18-ban, és hogy a `GenerateOptions.None` valóban csak a kért blokkot írja-e ki; elvárt-e a `.scl`/`.db`/`.udt` kiterjesztés; ír-e UTF-8 BOM-ot (a BOM megengedett).
-11. `PlcBlock.Export` / `PlcType.Export` (`ExportOptions.WithDefaults`), `PlcBlockComposition.Import` / `PlcTypeComposition.Import` (`ImportOptions.None`) viselkedése meglévő névnél; `PlcBlockComposition.Find` / `PlcTypeComposition.Find` megléte.
-12. `PlcType.IsKnowHowProtected`, `PlcType.IsConsistent`, `PlcBlock.IsConsistent`, a `GlobalDB`/`InstanceDB`/`ArrayDB` osztálynevek, és a `ProgrammingLanguage` enum F-értékeinek neve.
+| # | Pont | Kézikönyv | Állapot |
+|---|---|---|---|
+| 1 | Telepített verziók: `HKLM\SOFTWARE\Siemens\Automation\Openness\xx.x\PublicAPI\xx.x.x.x` → `Siemens.Engineering`, `PublicKeyToken` (`d29ec89bac048f84`), `AssemblyVersion` | 5.2.2 (68–69. o.) | 📘 + 🔧 a registry `PublicKeyToken`/`AssemblyVersion` értékét is összevetjük a DLL-lel |
+| 2 | `app.config` `codeBase` a strong name ellenőrzés megőrzésével (ajánlott), `AssemblyResolve` csak alternatíva | 5.2.8 (78–80. o.) | 📘 |
+| 3 | `TiaPortal(TiaPortalMode.WithoutUserInterface)`; a tűzfal-prompt csak futó példányhoz csatlakozáskor jelenik meg | 5.2.8–5.2.9 (78–84. o.) | 📘 – whitelist-bejegyzést a program nem ír (nem kerüljük meg a jóváhagyást) |
+| 4 | `Projects.Open(FileInfo)` csak aktuális verziójú projektet nyit, régebbinél kivétel; `OpenWithUpgrade` új, frissített projektet hoz létre | 5.3.1 (112–117. o.) | 📘 – a worker csak `Open`-t hív |
+| 5 | A megnyitandó projekt nem lehet nyitva másik TIA-példányban; csak olvasható projekt nem érhető el | 5.3.1 (112. o.) | 🔧 új hibakód: `PROJECT_OPEN_FAILED` (eddig tévesen `PROJECT_NOT_FOUND`) |
+| 6 | Eszközök: `Project.Devices`, `DeviceGroups` (rekurzív), `UngroupedDevicesGroup.Devices` | 5.9.7 (309. o.) | 📘 |
+| 7 | `PlcSoftware.Name` vs. CPU `DeviceItem.Name` – melyik egyezik a gépmodell `plc_name`-jével | – | ⏳ (mindkettőt elfogadjuk; többértelműségnél `PLC_NOT_FOUND`) |
+| 8 | Online állapot: `DeviceItem.GetService<OnlineProvider>().State`, `OnlineState.Offline` | 5.11.2.5 (384–385. o.) | 📘 |
+| 9 | Fordítás: `GetService<ICompilable>().Compile()`, rekurzív `CompilerResult.Messages`; minden eszköz offline; jelszavas safety programnál bejelentkezés nélkül kivétel | 5.3 (137–138. o.) | 📘 – a hibaüzenet utal a safety-jelszóra |
+| 10 | Blokkcsoportok: `BlockGroup.Blocks`, `BlockGroup.Groups` (`PlcBlockUserGroup`, rekurzív); rendszerblokkok: `SystemBlockGroups` → `PlcSystemBlockGroup.Groups` (szintén `PlcSystemBlockGroup`) | 5.11.3.1–5.11.3.4 (432–435. o.) | 🔧 a bejárás konkrét csoporttípusokra írva (a rendszercsoportok nem `PlcBlockUserGroup`-ok) |
+| 11 | Adattípusok: `TypeGroup.Types`, `TypeGroup.Groups` (`PlcTypeUserGroup`) | 5.11.3, 6.4.1.27 | 🔧 a nem dokumentált `SystemTypeGroups` bejárása törölve |
+| 12 | Külső forrás: `ExternalSources.CreateFromFile(név, út)`, csak `*.awl/*.scl/*.db/*.udt`; **az „External source files" mappa csoportjai nem érhetők el** | 5.11.3.17 (451. o.) | 🔧 a külső források csoport-bejárása törölve |
+| 13 | `GenerateBlocksFromSource()`: **csak ASCII** forrás; **meglévő blokkot felülír**; hibánál a projekt a hívás előtti állapotba áll vissza | 5.11.3.19 (453–456. o.) | 📘 – ASCII-szabály és rekurzív ütközésvizsgálat import előtt |
+| 14 | Generált DB-forrás kiterjesztése `*.db`, UDT `*.udt`, SCL-blokk `*.scl` | 5.11.3.17–5.11.3.18 | 🔧 a Python-generátor a példány-DB-ket `.db` fájlba írja (eddig `.scl`) |
+| 15 | `GenerateSource(IEnumerable<IGenerateSource>, FileInfo, GenerateOptions)`: UTF-8, csak STL/SCL blokk, DB, UDT; `GenerateOptions.None` = csak a megadott objektum; létező célfájlnál kivétel; PLC offline | 5.11.3.18 (452–453. o.) | 📘 + 🔧 export előtt offline-ellenőrzés |
+| 16 | Blokk XML-export/-import: FB, FC, OB, **globális** DB; LAD/FBD/GRAPH/SCL/STL; csak konzisztens blokk; hiányzó példány-DB nem jön létre; hiányzó hivatkozott objektumnál (UDT, FB) a normál import hibát ad | 6.4.1.12–6.4.1.14 (1044–1054. o.) | 🔧 SimaticML csak FB/FC/globális DB/UDT; példány- és tömb-DB csak SCL-forrásként (`.db`); importsorrend UDT → FC → FB → DB |
+| 17 | UDT XML-export/-import: `PlcType.Export`, `PlcTypeComposition.Import` | 6.4.1.27–6.4.1.28 (1082–1083. o.) | 📘 |
+| 18 | `ImportOptions.None`: meglévő objektumnál kivétel, nincs felülírás; `ExportOptions.WithDefaults` | 6.1.5–6.1.6 (932–934. o.) | 📘 |
+| 19 | Blokkattribútumok: `PlcBlock.IsConsistent`, `.Number`, `.ProgrammingLanguage` típusos tulajdonság; `IsKnowHowProtected`, UDT `IsConsistent` attribútumként olvasható | 5.2.23 (110–111. o.), 5.11.3 | 🔧 `IsKnowHowProtected` és UDT-`IsConsistent` `GetAttribute`-tal |
+| 20 | Kivételek: `EngineeringException` (visszaállítható: `EngineeringSecurityException`, `EngineeringTargetInvocationException`, …), `NonRecoverableException` (a TIA Portal bezárul) | 5.11.17.1 (734–735. o.) | 🔧 `NonRecoverableException` → `TIA_PORTAL_TERMINATED`, sandbox `Unknown` |
+| 21 | V18-tól explicit licencellenőrzés, `LicenseNotFoundException` | 2.2 (22. o.) | 🔧 típusnév alapján is `LICENSE_MISSING` |
+| 22 | `[STAThread]` csak a letöltési delegáltakhoz szükséges | 5.11.1.7 (353. o.) | 📘 – ártalmatlan, maradt |
+| 23 | `GlobalDB` / `InstanceDB` / `ArrayDB` osztálynevek | 6.4.1.17, 6.4.1.13 | 📘 (`InstanceDB`, `ArrayDB` szerepel); `GlobalDB` osztálynév ⏳ |
+| 24 | A generált SCL (`TON_TIME` multi-instance, abszolút `%I` címzés optimalizált FC-ben, `REGION`) fordul-e S7-1200/S7-1500-on | – | ⏳ |
+| 25 | `GenerateSource` ír-e UTF-8 BOM-ot, és ékezetmentes forrásnál ASCII-kompatibilis-e (a BOM megengedett) | 5.11.3.18 („UTF-8", a példakód szerint „ASCII text") | ⏳ |
 
-Minden eltérést ide kell rögzíteni, verziónként külön sorban.
+A ⏳ pontokat az első valódi V18 futás (`scripts/test-tia-integration.ps1 -Version V18`) igazolja; az eredményt ide és az alábbi táblázatba kell rögzíteni.
 
 ## API-eltérések nyilvántartása
 
 | Verzió | API-elem | Eltérés | Kezelés |
 |---|---|---|---|
-| – | – | még nincs ismert eltérés | – |
+| V18 (kézikönyv) | External source files csoportjai | Opennessből nem érhetők el | csak a gyökér `ExternalSources` |
+| V18 (kézikönyv) | `PlcTypeSystemGroup.SystemTypeGroups` | nem dokumentált | nem használjuk |
+| V18 (kézikönyv) | Példány-/tömb-DB SimaticML export | nem dokumentált (csak globális DB) | csak SCL-forrásként (`.db`) |

@@ -117,6 +117,16 @@ namespace TiaStudio.TiaAdapter.Common
                 }
                 string type = current.GetType().FullName ?? string.Empty;
                 string message = (current.Message ?? string.Empty).ToLowerInvariant();
+                // V18 kézikönyv 5.11.17.1: NonRecoverableException bezárja a TIA Portalt.
+                if (type.EndsWith("NonRecoverableException", StringComparison.Ordinal))
+                {
+                    return ErrorCodes.TiaPortalTerminated;
+                }
+                // V18 kézikönyv 2.2: V18-tól explicit licencellenőrzés, LicenseNotFoundException.
+                if (type.EndsWith("LicenseNotFoundException", StringComparison.Ordinal))
+                {
+                    return ErrorCodes.LicenseMissing;
+                }
                 if (message.Contains("licen"))
                 {
                     return ErrorCodes.LicenseMissing;

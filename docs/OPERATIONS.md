@@ -51,11 +51,21 @@ csomagot és a jóváhagyást. Bármely hiba után (`FAILED`) csak „Újrakezd�
 | `WORKER_BUILT_WITHOUT_OPENNESS` | a workert a TIA-t tartalmazó gépen újra kell építeni (`build-tia-workers.ps1 -RequireOpenness`) |
 | `OPENNESS_ACCESS_DENIED` | felhasználó hozzáadása a `Siemens TIA Openness` csoporthoz, ki-/bejelentkezés |
 | `LICENSE_MISSING` | TIA/Openness licenc ellenőrzése az Automation License Managerben |
+| `PROJECT_OPEN_FAILED` | a projektet zárd be a TIA Portalban (más példány nem tarthatja nyitva), és ellenőrizd, hogy írható – az Openness csak olvasható projektet nem ér el |
+| `TIA_PORTAL_TERMINATED` | a TIA Portal leállt (NonRecoverableException); a sandboxot dobd el, és indítsd újra a műveletet |
+| `COMPILE_ERROR` jelszavas safety programmal | a jelszóval védett safety program bejelentkezés nélkül nem fordítható; ilyen projekt nem használható sandboxként |
 | `PROJECT_UPGRADE_REQUIRED` | a projekt más verziójú; frissítést csak kézzel, külön jóváhagyott másolaton szabad végezni |
 | `BLOCK_COLLISION` | a sandbox már tartalmazza a neveket; új sandbox vagy más eszközazonosítók |
 
 A program nem állítja, hogy a Siemens-műveletek tranzakciósan visszafordíthatók: a visszaállítás
 módja mindig az ismert jó projektmásolat újbóli másolása.
+
+## Openness-hozzáférés
+
+A worker mindig **új**, felhasználói felület nélküli TIA Portal példányt indít; a futó példányhoz
+csatlakozáskor megjelenő Openness tűzfal-prompt ezért nem érinti. A program whitelist-bejegyzést nem
+ír a registrybe (a Siemens-jóváhagyást nem kerüli meg). A felhasználónak a `Siemens TIA Openness`
+helyi csoport tagjának kell lennie, és V18-tól a használt funkciók termék-licence is szükséges.
 
 ## Napló
 

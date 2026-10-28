@@ -101,8 +101,14 @@ namespace TiaStudio.UnitTests
             return Sources;
         }
 
+        public Exception FailImportWith { get; set; }
+
         public void ImportExternalSource(string externalSourceName, string filePath)
         {
+            if (FailImportWith != null)
+            {
+                throw FailImportWith;
+            }
             if (externalSourceName == FailImportOf)
             {
                 throw new InvalidOperationException("Syntax error in source");
@@ -218,7 +224,7 @@ namespace TiaStudio.UnitTests
             Assert.Null(result.ErrorCode);
             Assert.True(result.SavedProject);
             Assert.Equal(SandboxStates.Saved, result.SandboxState);
-            Assert.Equal(Fixtures.Blocks.Select(b => b + ".scl"), backend.Session.Plc.Imported);
+            Assert.Equal(new[] { "FB_Cylinder.scl", "DB_Cylinder_CYL_01.db", "FC_Cylinders.scl" }, backend.Session.Plc.Imported);
             Assert.True(backend.Session.Saved);
             Assert.True(backend.Session.Disposed);
             Assert.Equal(2, result.WarningCount);
@@ -284,6 +290,29 @@ namespace TiaStudio.UnitTests
             TiaResult result = Run(ImportCommand());
             Assert.Equal(ErrorCodes.LicenseMissing, result.ErrorCode);
             Assert.False(result.SavedProject);
+        }
+
+        [Fact]
+        public void OpenFailureFallsBackToProjectOpenFailed()
+        {
+            backend.OpenFailure = new InvalidOperationException("The project is already opened by another instance");
+            Assert.Equal(ErrorCodes.ProjectOpenFailed, Run(ImportCommand()).ErrorCode);
+        }
+
+        [Fact]
+        public void TiaTerminationDuringImportMakesSandboxUnknown()
+        {
+            backend.Session.Plc.FailImportWith = new Siemens.Engineering.NonRecoverableException("TIA Portal has been closed");
+            TiaResult result = Run(ImportCommand());
+            Assert.Equal(ErrorCodes.TiaPortalTerminated, result.ErrorCode);
+            Assert.Equal(SandboxStates.Unknown, result.SandboxState);
+        }
+
+        [Fact]
+        public void LicenseNotFoundExceptionIsClassifiedByType()
+        {
+            backend.OpenFailure = new Siemens.Engineering.LicenseNotFoundException("STEP 7");
+            Assert.Equal(ErrorCodes.LicenseMissing, Run(ImportCommand()).ErrorCode);
         }
 
         [Fact]
@@ -372,7 +401,7 @@ namespace TiaStudio.UnitTests
         [Fact]
         public void ImportFailureStopsAndDoesNotSave()
         {
-            backend.Session.Plc.FailImportOf = "DB_Cylinder_CYL_01.scl";
+            backend.Session.Plc.FailImportOf = "DB_Cylinder_CYL_01.db";
             TiaResult result = Run(ImportCommand());
             Assert.Equal(ErrorCodes.ImportFailed, result.ErrorCode);
             Assert.Equal(new[] { "FB_Cylinder.scl" }, backend.Session.Plc.Imported);
@@ -443,6 +472,26 @@ namespace TiaStudio.UnitTests
         public void UsageErrorWithoutCommand()
         {
             Assert.Equal(WorkerExitCodes.Usage, new WorkerHost("V18", backend, TextWriter.Null).Run(new string[0]));
+        }
+    }
+}
+
+namespace Siemens.Engineering
+{
+    /// <summary>Tesztcélú, azonos nevű kivételtípusok (a besorolás típusnév alapján történik).</summary>
+    internal sealed class NonRecoverableException : System.Exception
+    {
+        public NonRecoverableException(string message)
+            : base(message)
+        {
+        }
+    }
+
+    internal sealed class LicenseNotFoundException : System.Exception
+    {
+        public LicenseNotFoundException(string message)
+            : base(message)
+        {
         }
     }
 }

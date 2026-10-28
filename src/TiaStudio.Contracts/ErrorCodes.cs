@@ -51,6 +51,7 @@ namespace TiaStudio.Contracts
         public const string LicenseMissing = "LICENSE_MISSING";
         public const string UmacPermissionDenied = "UMAC_PERMISSION_DENIED";
 
+        public const string ProjectOpenFailed = "PROJECT_OPEN_FAILED";
         public const string ProjectNotFound = "PROJECT_NOT_FOUND";
         public const string ProjectVersionMismatch = "PROJECT_VERSION_MISMATCH";
         public const string ProjectNotSandbox = "PROJECT_NOT_SANDBOX";
@@ -70,6 +71,7 @@ namespace TiaStudio.Contracts
         public const string BlockNotFound = "BLOCK_NOT_FOUND";
         public const string ExportFailed = "EXPORT_FAILED";
 
+        public const string TiaPortalTerminated = "TIA_PORTAL_TERMINATED";
         public const string Timeout = "TIMEOUT";
         public const string WorkerCrashed = "WORKER_CRASHED";
         public const string Cancelled = "CANCELLED";

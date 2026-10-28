@@ -17,6 +17,7 @@ from .models import Cylinder, MachineProject
 TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 TEMPLATE_SET_FILE = TEMPLATE_DIR / "template-set.json"
 LINE_ENDING = "\r\n"
+SOURCE_EXTENSIONS = {"FB": ".scl", "FC": ".scl", "DB": ".db", "UDT": ".udt"}
 
 
 class TemplateIntegrityError(Exception):
@@ -105,7 +106,10 @@ class Renderer:
 
     def _file(self, block_name: str, block_type: str, body: str) -> SourceFile:
         content = _to_source(self._header(block_name) + body)
-        return SourceFile(f"sources/{block_name}.scl", block_name, block_type, content)
+        # TIA Portal Openness V18 kézikönyv 5.11.3.17/5.11.3.18: külső forrás kiterjesztése
+        # típusfüggő (*.scl kódblokk, *.db adatblokk, *.udt adattípus).
+        extension = SOURCE_EXTENSIONS[block_type]
+        return SourceFile(f"sources/{block_name}{extension}", block_name, block_type, content)
 
     def render(self) -> list[SourceFile]:
         """Forrásfájlok importálási sorrendben: FB -> instance DB-k -> hívó FC."""

@@ -67,10 +67,16 @@ integritás, CHECKED = hash-újramérés, GENERATED = manifest 1.1 importcsomag,
 Az export/import közös szabályai (`LibraryRules`) a Contracts-ban vannak, mert a worker is alkalmazza őket.
 Részletek: [BLOCK_LIBRARY.md](BLOCK_LIBRARY.md).
 
+## Openness-hivatkozások
+
+Az `OpennessShared/OpennessBackend.cs` a TIA Portal Openness V18 kézikönyv (12/2022) fejezeteire
+hivatkozik a kódkommentekben; a kézikönyvvel való tételes összevetés és a futásidőben még igazolandó
+pontok: [COMPATIBILITY_MATRIX.md](COMPATIBILITY_MATRIX.md#openness-api--összevetés-a-v18-kézikönyvvel).
+
 ## Generált PLC-modulstratégia (spec 7.2)
 
 - `FB_Cylinder` – egyetlen közös, paraméterezett FB (végállás-kiértékelés, mindkét érzékelő aktív hiba,
   mozgási időtúllépés, nyugtázás, státuszkód). Kimenetet nem ír; nem biztonsági funkció.
-- `DB_Cylinder_<id>` – példány-DB eszközönként.
+- `DB_Cylinder_<id>` – példány-DB eszközönként (`.db` külső forrás, Openness kézikönyv 5.11.3.17).
 - `FC_Cylinders` – hívó FC; a felhasználó illeszti be egy ciklikus OB-ba (OB1-et nem módosítjuk).
 - Bemenetek abszolút címzéssel (`%I0.0`) a gépmodellből; tag-tábla generálása későbbi kiadás.

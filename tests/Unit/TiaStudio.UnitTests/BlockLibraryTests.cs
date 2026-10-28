@@ -74,16 +74,25 @@ namespace TiaStudio.UnitTests
         [InlineData("FB_Motor", "FB", "SCL", "external_source,simaticml")]
         [InlineData("FB_Lad", "FB", "LAD", "simaticml")]
         [InlineData("FC_Calc", "FC", "FBD", "simaticml")]
-        [InlineData("DB_Data", "DB", "DB", "external_source,simaticml")]
+        [InlineData("DB_Data", "DB", "DB", "external_source,simaticml", "Global")]
+        [InlineData("DB_Motor1", "DB", "DB", "external_source", "Instance")]
+        [InlineData("DB_Array", "DB", "DB", "external_source", "Array")]
         [InlineData("UDT_Axis", "UDT", null, "external_source,simaticml")]
         [InlineData("Main", "OB", "LAD", "")]
         [InlineData("F_Guard", "FB", "F_LAD", "")]
         [InlineData("FDB", "DB", "F_DB", "")]
         [InlineData("FB Motor", "FB", "SCL", "")]
         [InlineData("1FB", "FB", "SCL", "")]
-        public void ExportableFormats(string name, string type, string language, string expected)
+        public void ExportableFormats(string name, string type, string language, string expected, string dbKind = null)
         {
-            Assert.Equal(expected, string.Join(",", LibraryRules.ExportableFormats(Block(name, type, language))));
+            Assert.Equal(expected, string.Join(",", LibraryRules.ExportableFormats(Block(name, type, language, dbKind))));
+        }
+
+        [Fact]
+        public void InstanceDbAsSimaticMlIsNotImportable()
+        {
+            BlockLibraryItem item = new BlockLibraryItem { BlockName = "DB_M1", BlockType = "DB", DbKind = DbKinds.Instance, ProgrammingLanguage = "DB", Format = BlockFormats.SimaticMl, SourceTiaVersion = "V18" };
+            Assert.Equal(ErrorCodes.LibraryItemNotAllowed, LibraryRules.ImportProblem(item, "V18").Item1);
         }
 
         [Fact]
@@ -394,6 +403,15 @@ namespace TiaStudio.UnitTests
         {
             backend.Session.Plc.ExportContent = (block, format) => Encoding.UTF8.GetBytes("// Motor indítás\r\n");
             Assert.Equal(ErrorCodes.LibraryItemNotAllowed, Run(Command(TiaOperations.ExportBlocks, Request("FB_Motor", BlockFormats.ExternalSource))).ErrorCode);
+        }
+
+        [Fact]
+        public void ExportRequiresOfflinePlcButListingDoesNot()
+        {
+            backend.Session.Plc.Offline = false;
+            Assert.Equal(TiaJobStatus.Success, Run(Command(TiaOperations.ListBlocks)).Status);
+            Assert.Equal(ErrorCodes.PlcOnline, Run(Command(TiaOperations.ExportBlocks, Request("FB_Motor", BlockFormats.SimaticMl))).ErrorCode);
+            Assert.Empty(backend.Session.Plc.Exported);
         }
 
         [Fact]

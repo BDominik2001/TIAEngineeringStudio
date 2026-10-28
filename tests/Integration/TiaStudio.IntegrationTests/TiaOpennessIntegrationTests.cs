@@ -167,7 +167,7 @@ namespace TiaStudio.IntegrationTests
             export.ExportBlocks = new System.Collections.Generic.List<ExportRequestItem>
             {
                 new ExportRequestItem { BlockName = "FB_Cylinder", Format = BlockFormats.ExternalSource },
-                new ExportRequestItem { BlockName = "DB_Cylinder_CYL_01", Format = BlockFormats.SimaticMl },
+                new ExportRequestItem { BlockName = "DB_Cylinder_CYL_01", Format = BlockFormats.ExternalSource },
                 new ExportRequestItem { BlockName = "FC_Cylinders", Format = BlockFormats.SimaticMl },
             };
             TiaResult exported = await client.ExportBlocksAsync(new TiaJobRequest(export, TimeSpan.FromMinutes(10)), CancellationToken.None);

@@ -138,6 +138,22 @@ namespace TiaStudio.UnitTests
         }
 
         [Fact]
+        public void RegistryAssemblyVersionMustMatchDll()
+        {
+            FakeRegistry registry = new FakeRegistry();
+            FakeAssemblies assemblies = new FakeAssemblies();
+            registry.AddInstallation("18.0", "18.0.0.0", "dll18");
+            registry.Values[RegistryTiaInstallationDiscovery.OpennessKey + "\\18.0\\PublicAPI\\18.0.0.0"]["AssemblyVersion"] = "18.0.0.0";
+            registry.Values[RegistryTiaInstallationDiscovery.OpennessKey + "\\18.0\\PublicAPI\\18.0.0.0"]["PublicKeyToken"] = Token;
+            assemblies.Files["dll18"] = Tuple.Create(new Version(18, 0, 0, 0), Token);
+            Assert.Equal(InstallStatus.NotTested, Discovery(registry, assemblies).DiscoverInstalledVersions()[0].Status);
+            assemblies.Files["dll18"] = Tuple.Create(new Version(18, 0, 1, 0), Token);
+            TiaInstallInfo mismatch = Discovery(registry, assemblies).DiscoverInstalledVersions()[0];
+            Assert.Equal(InstallStatus.Unavailable, mismatch.Status);
+            Assert.Equal(ErrorCodes.ApiDllMismatch, mismatch.ErrorCode);
+        }
+
+        [Fact]
         public void MissingWorkerIsUnavailable()
         {
             FakeRegistry registry = new FakeRegistry();
