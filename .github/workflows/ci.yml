@@ -93,7 +93,7 @@ jobs:
       - name: Release layout (workers unlinked – no TIA on the runner)
         shell: pwsh
         run: ./scripts/build-desktop.ps1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: TiaEngineeringStudio-unlinked
           path: dist/TiaEngineeringStudio
@@ -107,7 +107,7 @@ jobs:
           Get-ChildItem $out | Format-Table Name, Length
           if (Test-Path (Join-Path $out 'error.txt')) { Get-Content (Join-Path $out 'error.txt') }
           if ($p.ExitCode -ne 0) { throw "screenshot mode exit code $($p.ExitCode)" }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ui-screenshots

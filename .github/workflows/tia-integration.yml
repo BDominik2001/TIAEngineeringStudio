@@ -60,7 +60,7 @@ jobs:
           Copy-Item "$env:RUNNER_TEMP\tes-${{ matrix.tia }}\build-info.json" artifacts\build-info-${{ matrix.tia }}.json -ErrorAction SilentlyContinue
           $result = if ('${{ job.status }}' -eq 'success') { 'Passed' } else { 'Failed / not completed' }
           "### TIA Portal ${{ matrix.tia }}: $result`n`nCommit: ``$(git rev-parse HEAD)``  ·  Record it in docs/COMPATIBILITY.md." | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: tia-integration-${{ matrix.tia }}
