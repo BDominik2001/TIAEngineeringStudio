@@ -35,7 +35,7 @@ jobs:
     environment: tia-integration
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.sha }}
       - name: Known-good sandbox project configured
