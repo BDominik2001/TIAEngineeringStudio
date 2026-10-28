@@ -26,6 +26,9 @@ A teljes követelményrendszer: [`TIA_Engineering_Studio_TIA_V18_V19_V20_Projekt
 | Blokk-könyvtárak: export projektből (SCL-forrás / SimaticML), import a jóváhagyási láncon | kész, hamis Openness-backenddel tesztelve; valódi TIA-val igazolandó |
 | WPF Desktop | megírva; a XAML csak Windows alatt fordul (CI: `windows-latest`) |
 
+Alkalmazásverzió: **0.1.0**, kiadás (tag) még nincs. Az alkalmazás verziója független a TIA Portal
+célverzióitól; a séma-, protokoll- és sablonverziókat a [docs/VERSIONING.md](docs/VERSIONING.md) írja le.
+
 **Fontos:** a V18/V19/V20 Openness-integráció a spec 11.4 szerint csak akkor tekinthető
 kompatibilisnek, ha a `scripts/test-tia-integration.ps1` mindhárom verzióra dokumentáltan lefutott
 (lásd [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md)). Jelenleg egyik verzióra sincs
@@ -135,3 +138,6 @@ Bármely hiba `FAILED`; onnan csak újrakezdés (DRAFT) vezet tovább. Részlete
 - [Biztonsági szabályok](docs/SECURITY_RULES.md) · [Kompatibilitási mátrix](docs/COMPATIBILITY.md)
 - [TIA V18](docs/TIA_V18.md) · [TIA V19](docs/TIA_V19.md) · [TIA V20](docs/TIA_V20.md)
 - [Blokk-könyvtárak](docs/BLOCK_LIBRARY.md) · [Üzemeltetés](docs/OPERATIONS.md) · [Ütemterv és döntési napló](docs/ROADMAP.md)
+- Fejlesztés és kiadás: [Közreműködés](docs/CONTRIBUTING.md) · [Branchelés, commitok, PR](docs/BRANCHING.md) ·
+  [Verziózás](docs/VERSIONING.md) · [Kiadási folyamat](docs/RELEASE_PROCESS.md) · [Változástörténet](CHANGELOG.md) ·
+  [Biztonsági szabályzat](SECURITY.md)

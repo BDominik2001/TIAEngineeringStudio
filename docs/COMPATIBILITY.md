@@ -6,6 +6,26 @@
 > ha a `scripts/test-tia-integration.ps1` az adott verzióra sikeresen lefutott, az eredményt itt
 > rögzítették, és a sandboxban létrejött PLC-objektumokat kézzel is ellenőrizték (spec 11.4).
 
+## Kiadási állapot (verziókövetési szabályzat 11. pont)
+
+Állapotok: **Supported & tested** (a `tia-integration` workflow vagy a `scripts/test-tia-integration.ps1`
+az adott verzióra sikeresen lefutott, és az eredmény itt rögzítve) · **Supported, integration test pending**
+(a worker megépül a saját Openness-szel, valódi TIA-teszt még nincs) · **Build only** (csak „unlinked”
+worker, Openness nélkül) · **Unsupported**. A sikeres fordítás önmagában soha nem „tested”; a
+`Skipped` / `Not tested` eredmény nem helyettesíthető `Passed`-del.
+
+| TIA | Állapot | Adapter / build | Openness assembly | Siemens frissítési szint | Windows | CPU / HMI | Import | Compile | Export | Utolsó teszt | CI job / report | Ismert problémák |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| V18 | Supported, integration test pending | `TiaStudio.TiaAdapter.V18` 0.1.0 | 18.0.0.0 | – | – | S7-1200 / S7-1500 | ⏳ | ⏳ | ⏳ | – | – | lásd a tesztmátrixot |
+| V19 | Supported, integration test pending | `TiaStudio.TiaAdapter.V19` 0.1.0 | 19.0.0.0 | – | – | S7-1200 / S7-1500 | ⏳ | ⏳ | ⏳ | – | – | lásd a tesztmátrixot |
+| V20 | Supported, integration test pending | `TiaStudio.TiaAdapter.V20` 0.1.0 | 20.0.0.0 | – | – | S7-1200 / S7-1500 | ⏳ | ⏳ | ⏳ | – | – | lásd a tesztmátrixot |
+
+Frissítés: minden `tia-integration` futás után ebbe a táblába és a lenti futtatási naplóba kerül a
+dátum, a TIA Update, a Windows-verzió és a workflow-futás linkje (a `build-info-V<NN>.json` artifact
+tartalmazza a commitot és a verziókat). Egy V20-ban elérhető művelet nem feltételezhető V18-on, és a
+`.ap18/.ap19/.ap20` projektek visszafelé nem nyithatók meg automatikusan: a worker mindig csak a
+saját verziójú sandbox-projektet nyitja meg (`PROJECT_VERSION_MISMATCH`).
+
 ## Tesztmátrix (spec 11.2)
 
 Jelmagyarázat: ✅ igazolt (dátum, gép, TIA Update a naplóban) · ⏳ nem futott · ❌ hibás · 🧪 csak TIA nélküli teszt (hamis backend) igazolja.

@@ -22,15 +22,27 @@ C# (System.Text RustStaticValidator PythonSource-  TiaWorkerProcess-   SandboxSe
 
 ## Rétegek és függőségi szabályok (spec 4.1)
 
-| Projekt | Cél | Hivatkozhat | Nem hivatkozhat |
+| Projekt (mappa) | Cél | Hivatkozhat | Nem hivatkozhat |
 |---|---|---|---|
-| `TiaStudio.Domain` | gépmodell, szabály-primitívek (`NamingRules`, `IoAddress`), `WorkflowState` | – | Siemens, WPF, JSON, Python, Rust |
-| `TiaStudio.Contracts` | DTO-k, hibakódok, `PackageVerifier`, `SandboxRules`, `ApprovalDigest` | Newtonsoft.Json | Siemens, WPF |
-| `TiaStudio.Application` | `EngineeringWorkflow`, port interfészek | Domain, Contracts | Infrastructure, WPF, Siemens |
-| `TiaStudio.Infrastructure` | portok implementációi | Application | WPF, Siemens |
-| `TiaStudio.TiaAdapter.Common` | worker-végrehajtás, `IOpennessBackend` | Contracts | WPF, Siemens |
-| `TiaStudio.TiaAdapter.V18/V19/V20` | worker EXE | Common + saját `Siemens.Engineering.dll` | WPF, más verzió DLL-je |
-| `TiaStudio.Desktop` | UI | Infrastructure (csak a kompozíciós gyökérben) | Siemens, workerek |
+| `TiaStudio.Domain` (`src/csharp/Core`) | gépmodell, szabály-primitívek (`NamingRules`, `IoAddress`), `WorkflowState` | – | Siemens, WPF, JSON, Python, Rust |
+| `TiaStudio.Contracts` (`src/csharp/Ipc`) | DTO-k, hibakódok, `PackageVerifier`, `SandboxRules`, `ApprovalDigest` | Newtonsoft.Json | Siemens, WPF |
+| `TiaStudio.Application` (`src/csharp/Application`) | `EngineeringWorkflow`, port interfészek | Domain, Contracts | Infrastructure, WPF, Siemens |
+| `TiaStudio.Infrastructure` (`src/csharp/Infrastructure`) | portok implementációi | Application | WPF, Siemens |
+| `TiaStudio.TiaAdapter.Common` (`src/tia-adapters/common`) | worker-végrehajtás, `IOpennessBackend` | Contracts | WPF, Siemens |
+| `TiaStudio.TiaAdapter.V18/V19/V20` (`src/tia-adapters/v18 … v20`) | worker EXE | Common + saját `Siemens.Engineering.dll` | WPF, más verzió DLL-je |
+| `TiaStudio.Desktop` (`src/csharp/Desktop`) | UI | Infrastructure (csak a kompozíciós gyökérben) | Siemens, workerek |
+
+A V18/V19/V20 közös Openness-kódja a `src/tia-adapters/openness-shared` mappában van, és a
+workerekbe a saját verziójú `Siemens.Engineering.dll`-lel fordul; verzióspecifikus API csak a
+`v18`/`v19`/`v20` adapterbe kerülhet, `TiaCapabilities.Features` jelző mögé. Új TIA-verzióhoz új
+adaptermappa és csproj kell (`TiaVersion`, `TiaAssemblyVersion`), a Core/Application nem változik.
+
+A projekt-, assembly- és névtérnevek a könyvtár-átszervezés előtti nevek (`TiaStudio.Domain`,
+`TiaStudio.Contracts`), hogy a meglévő hivatkozások és a worker-protokoll ne törjön; a mappanév
+követi a szabályzat elnevezését (`Core`, `Ipc`).
+
+A Python-generátor (`src/python/generator`) és a Rust-validátor (`src/rust/validator`) külön
+folyamatban, illetve C ABI-n át kapcsolódik; a verziózott SCL-sablonok a `templates/scl` mappában vannak.
 
 A `Contracts` a protokollt definiáló tiszta függvényeket is tartalmazza (manifest-, sandbox- és
 jóváhagyás-ellenőrzés), mert ezeket **azonos módon** kell kiszámolnia a főalkalmazásnak és a workernek.
