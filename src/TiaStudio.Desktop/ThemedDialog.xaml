@@ -1,0 +1,32 @@
+<Window x:Class="TiaStudio.Desktop.ThemedDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Style="{StaticResource PortalWindow}" Tag="dialog"
+        Width="520" SizeToContent="Height" MaxHeight="640" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Background="#C9CED3" BorderBrush="#B3BAC1" BorderThickness="0,1,0,0" Padding="14,10,8,4">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="PrimaryButton" Style="{StaticResource AccentButton}" MinWidth="96" IsDefault="True" Click="OnPrimary" />
+                <Button x:Name="SecondaryButton" MinWidth="96" IsCancel="True" Click="OnSecondary" />
+            </StackPanel>
+        </Border>
+        <Grid Margin="20,18,20,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid x:Name="IconHost" Width="38" Height="38" VerticalAlignment="Top" Margin="0,2,16,0">
+                <Ellipse x:Name="IconCircle" Fill="{StaticResource Brush.Orange}" />
+                <TextBlock x:Name="IconGlyph" Text="!" Foreground="White" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-2,0,0" />
+            </Grid>
+            <StackPanel Grid.Column="1">
+                <TextBlock x:Name="HeadingText" Style="{StaticResource Text.SectionTitle}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                <ScrollViewer MaxHeight="420" VerticalScrollBarVisibility="Auto">
+                    <TextBox x:Name="MessageText" IsReadOnly="True" BorderThickness="0" Background="Transparent" TextWrapping="Wrap"
+                             Padding="0" MinHeight="0" Foreground="{StaticResource Brush.TextDark}" />
+                </ScrollViewer>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</Window>

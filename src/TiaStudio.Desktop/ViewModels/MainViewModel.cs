@@ -65,6 +65,27 @@ namespace TiaStudio.Desktop.ViewModels
         }
     }
 
+    /// <summary>A munkafolyamat-sáv egy lépése (Done / Current / Pending / Failed).</summary>
+    public sealed class WorkflowStepViewModel : ObservableObject
+    {
+        private string status = "Pending";
+
+        public WorkflowStepViewModel(WorkflowState state, string label, bool isLast)
+        {
+            State = state;
+            Label = label;
+            IsLast = isLast;
+        }
+
+        public WorkflowState State { get; }
+
+        public string Label { get; }
+
+        public bool IsLast { get; }
+
+        public string Status { get => status; set => Set(ref status, value); }
+    }
+
     public sealed class GeneratedFileViewModel : ObservableObject
     {
         private bool viewed;
@@ -115,6 +136,9 @@ namespace TiaStudio.Desktop.ViewModels
         private string previewText;
         private string sandboxProjectPath;
         private string knownGoodProjectPath;
+        private int selectedSection;
+        private bool statusIsError;
+        private WorkflowState lastGoodState = WorkflowState.Draft;
 
         public MainViewModel(
             EngineeringWorkflow workflow,
@@ -181,6 +205,14 @@ namespace TiaStudio.Desktop.ViewModels
             ImportCommand = new AsyncCommand(ImportAsync, () => !IsBusy && State == WorkflowState.ReadyToImport, OnUnhandled);
             ResetCommand = new RelayCommand(() => { workflow.Reset(); modelDirty = true; }, () => !IsBusy && State != WorkflowState.Draft);
             CancelCommand = new RelayCommand(() => cancellation?.Cancel(), () => IsBusy && cancellation != null);
+            NavigateCommand = new RelayCommand<object>(p => SelectedSection = Convert.ToInt32(p, System.Globalization.CultureInfo.InvariantCulture));
+
+            string[] labels = { "Vázlat", "Validálva", "Ellenőrizve", "Generálva", "Átnézve", "Jóváhagyva", "Importra kész", "Importálva", "Fordítva", "Mentve" };
+            for (int i = 0; i < labels.Length; i++)
+            {
+                WorkflowSteps.Add(new WorkflowStepViewModel((WorkflowState)i, labels[i], i == labels.Length - 1));
+            }
+            UpdateWorkflowSteps();
 
             NewProject();
             RefreshInstallations();
@@ -227,6 +259,15 @@ namespace TiaStudio.Desktop.ViewModels
         public ObservableCollection<CompileMessage> CompileMessages { get; } = new ObservableCollection<CompileMessage>();
 
         public ObservableCollection<string> AuditLines { get; } = new ObservableCollection<string>();
+
+        public ObservableCollection<WorkflowStepViewModel> WorkflowSteps { get; } = new ObservableCollection<WorkflowStepViewModel>();
+
+        /// <summary>0 Kezdőlap, 1 Gépmodell, 2 Ellenőrzés, 3 Előnézet, 4 TIA Portal, 5 Blokk-könyvtárak, 6 Napló.</summary>
+        public int SelectedSection { get => selectedSection; set => Set(ref selectedSection, value); }
+
+        public ICommand NavigateCommand { get; }
+
+        public bool StatusIsError { get => statusIsError; private set => Set(ref statusIsError, value); }
 
         public ICommand NewProjectCommand { get; }
 
@@ -387,10 +428,15 @@ namespace TiaStudio.Desktop.ViewModels
         private void OpenProject()
         {
             string path = dialogs.OpenFile("Gépmodell megnyitása", "Gépmodell (*.json)|*.json");
-            if (path == null)
+            if (path != null)
             {
-                return;
+                LoadProjectFile(path);
             }
+        }
+
+        /// <summary>Gépmodell betöltése fájlból (csak hibamentes 1.1-es modell töltődik be).</summary>
+        public void LoadProjectFile(string path)
+        {
             byte[] bytes = File.ReadAllBytes(path);
             ValidationReport report = modelValidator.Validate(bytes);
             if (!report.Ok)
@@ -566,6 +612,7 @@ namespace TiaStudio.Desktop.ViewModels
 
         private void Show(StepResult result)
         {
+            StatusIsError = !result.Ok;
             StatusMessage = result.Ok ? result.Message : result.ErrorCode + ": " + result.Message;
             ReplaceAll(Issues, result.Details);
             RefreshFromWorkflow();
@@ -582,6 +629,7 @@ namespace TiaStudio.Desktop.ViewModels
             OnPropertyChanged(nameof(ValidateLabel));
             OnPropertyChanged(nameof(CheckLabel));
             OnPropertyChanged(nameof(GenerateLabel));
+            UpdateWorkflowSteps();
             if (workflow.Package?.Manifest != null && workflow.Generation != null)
             {
                 if (GeneratedFiles.Count == 0 || GeneratedFiles[0].FullPath == null || !GeneratedFiles[0].FullPath.StartsWith(workflow.Generation.OutputDirectory, StringComparison.OrdinalIgnoreCase))
@@ -608,6 +656,26 @@ namespace TiaStudio.Desktop.ViewModels
             ReplaceAll(ImportPlan, worker?.ImportPlan ?? Enumerable.Empty<ImportPlanItem>());
             ReplaceAll(CompileMessages, worker?.Compile?.Messages ?? Enumerable.Empty<CompileMessage>());
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void UpdateWorkflowSteps()
+        {
+            WorkflowState state = workflow.State;
+            if (state != WorkflowState.Failed)
+            {
+                lastGoodState = state;
+            }
+            foreach (WorkflowStepViewModel step in WorkflowSteps)
+            {
+                if (state == WorkflowState.Failed)
+                {
+                    step.Status = step.State <= lastGoodState ? "Done" : step.State == lastGoodState + 1 ? "Failed" : "Pending";
+                }
+                else
+                {
+                    step.Status = step.State < state ? "Done" : step.State == state ? (state == WorkflowState.Saved ? "Done" : "Current") : "Pending";
+                }
+            }
         }
 
         private void OnUnhandled(Exception ex)

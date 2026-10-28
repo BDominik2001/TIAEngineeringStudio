@@ -28,13 +28,12 @@ namespace TiaStudio.Desktop.Services
 
         public bool Confirm(string title, string message)
         {
-            return System.Windows.MessageBox.Show(message, title, System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning, System.Windows.MessageBoxResult.No)
-                == System.Windows.MessageBoxResult.Yes;
+            return ThemedDialog.Show(System.Windows.Application.Current?.MainWindow, title, message, ThemedDialog.Kind.Confirm, "Igen", "Mégse");
         }
 
         public void ShowError(string title, string message)
         {
-            System.Windows.MessageBox.Show(message, title, System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            ThemedDialog.Show(System.Windows.Application.Current?.MainWindow, title, message, ThemedDialog.Kind.Error, "Rendben", null);
         }
     }
 }

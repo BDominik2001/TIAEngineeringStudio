@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Windows;
+using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using TiaStudio.Application.Library;
 using TiaStudio.Application.Workflow;
 using TiaStudio.Desktop.Services;
@@ -23,12 +25,119 @@ namespace TiaStudio.Desktop
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            StartupOptions options = StartupOptions.Parse(e.Args);
+            if (options.ScreenshotDirectory != null)
+            {
+                // Felügyelet nélküli futás: modális ablak helyett hibafájl és kilépési kód.
+                DispatcherUnhandledException += (s, args) =>
+                {
+                    ScreenshotMode.Fail(this, options, args.Exception);
+                    args.Handled = true;
+                };
+                try
+                {
+                    ScreenshotMode.Run(this, options);
+                }
+                catch (Exception ex)
+                {
+                    ScreenshotMode.Fail(this, options, ex);
+                }
+                return;
+            }
+
             DispatcherUnhandledException += (s, args) =>
             {
-                MessageBox.Show(args.Exception.ToString(), "TIA Engineering Studio – váratlan hiba", MessageBoxButton.OK, MessageBoxImage.Error);
+                ReportFatal("TIA Engineering Studio – váratlan hiba", args.Exception.ToString());
                 args.Handled = true;
             };
 
+            if (options.NoSplash)
+            {
+                (MainWindow window, MainViewModel _) = BuildMainWindow(null);
+                if (window == null)
+                {
+                    Shutdown(1);
+                    return;
+                }
+                ShowMain(window);
+                return;
+            }
+            RunWithSplash();
+        }
+
+        /// <summary>
+        /// Nyitóképernyő: amíg az intro fut, a főablak ApplicationIdle prioritással felépül; ha
+        /// mindkettő kész, az outro elhalványítja a nyitóképet, és a főablak beúszik.
+        /// </summary>
+        private void RunWithSplash()
+        {
+            SplashWindow splash = new SplashWindow();
+            splash.Show();
+            MainWindow main = null;
+            bool introDone = false;
+            bool mainBuilt = false;
+
+            void TryFinish()
+            {
+                if (!introDone || !mainBuilt)
+                {
+                    return;
+                }
+                if (main == null)
+                {
+                    splash.Close();
+                    Shutdown(1);
+                    return;
+                }
+                splash.PlayOutro(() =>
+                {
+                    ShowMain(main);
+                    splash.Close();
+                });
+            }
+
+            splash.PlayIntro(() =>
+            {
+                introDone = true;
+                TryFinish();
+            });
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
+            {
+                main = BuildMainWindow(splash).Window;
+                mainBuilt = true;
+                TryFinish();
+            }));
+        }
+
+        private void ShowMain(MainWindow window)
+        {
+            MainWindow = window;
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
+            window.Opacity = 0;
+            window.Show();
+            window.Activate();
+            DoubleAnimation fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(SystemParameters.ClientAreaAnimation ? 320 : 1))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            };
+            window.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        private static void ReportFatal(string title, string message)
+        {
+            try
+            {
+                ThemedDialog.Show(Current?.MainWindow, title, message, ThemedDialog.Kind.Error, "Rendben", null);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>A kompozíciós gyökér; hibás beállítás esetén (null, null).</summary>
+        internal static (MainWindow Window, MainViewModel ViewModel) BuildMainWindow(Window owner, Action<StudioSettings> overrideSettings = null)
+        {
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             StudioSettings settings;
             try
@@ -37,10 +146,14 @@ namespace TiaStudio.Desktop
             }
             catch (Exception ex) when (ex is IOException || ex is Newtonsoft.Json.JsonException)
             {
-                MessageBox.Show("appsettings.json hibás: " + ex.Message, "TIA Engineering Studio", MessageBoxButton.OK, MessageBoxImage.Error);
-                Shutdown(1);
-                return;
+                if (owner != null)
+                {
+                    owner.Hide();
+                }
+                ReportFatal("TIA Engineering Studio", "appsettings.json hibás: " + ex.Message);
+                return (null, null);
             }
+            overrideSettings?.Invoke(settings);
 
             SystemClock clock = new SystemClock();
             EnvironmentUserContext user = new EnvironmentUserContext();
@@ -88,9 +201,7 @@ namespace TiaStudio.Desktop
                 new WpfDialogService(),
                 handler => audit.LineWritten += (sender, line) => handler(line),
                 libraryService);
-            MainWindow window = new MainWindow { DataContext = viewModel };
-            MainWindow = window;
-            window.Show();
+            return (new MainWindow { DataContext = viewModel }, viewModel);
         }
 
         /// <summary>Kiadási elrendezésben a python\ mappa az EXE mellett van; fejlesztéskor a repó python\ mappája.</summary>

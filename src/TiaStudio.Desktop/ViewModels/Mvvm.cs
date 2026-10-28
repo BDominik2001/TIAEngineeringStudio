@@ -56,6 +56,32 @@ namespace TiaStudio.Desktop.ViewModels
         }
     }
 
+    public sealed class RelayCommand<T> : ICommand
+    {
+        private readonly Action<T> execute;
+
+        public RelayCommand(Action<T> execute)
+        {
+            this.execute = execute;
+        }
+
+        public event EventHandler CanExecuteChanged
+        {
+            add { CommandManager.RequerySuggested += value; }
+            remove { CommandManager.RequerySuggested -= value; }
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return true;
+        }
+
+        public void Execute(object parameter)
+        {
+            execute((T)parameter);
+        }
+    }
+
     /// <summary>Aszinkron parancs: futás közben letiltja magát, a kivételt a hívó kezelője kapja.</summary>
     public sealed class AsyncCommand : ICommand
     {

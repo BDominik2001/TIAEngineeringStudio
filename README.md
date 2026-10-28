@@ -1,3 +1,5 @@
+<img src="docs/assets/logo-256.png" alt="TIA Engineering Studio logó" width="96" align="right" />
+
 # TIA Engineering Studio
 
 Windows-alapú mérnöki munkaeszköz Siemens **TIA Portal V18, V19 és V20** célrendszerekhez.
@@ -53,6 +55,26 @@ tests/
 scripts/              bootstrap, build-*, configure-workers, check-environment, test-*
 docs/                 architektúra, szerződések, biztonság, kompatibilitás, verziónkénti leírások, üzemeltetés
 ```
+
+## Felület
+
+A kezelőfelület a TIA Portal portál nézetének színvilágát követi: fekete fejléc türkiz kiemeléssel,
+sötét palaszürke bal oldali navigációs csempék (a kiválasztott világos, narancs jelölővel), kékesszürke
+műveleti oszlop fogaskerék-vízjellel és pont-hivatkozásokkal, világosszürke munkaterület kártyákkal.
+Minden vezérlő saját sablont kap (`src/TiaStudio.Desktop/Themes/PortalTheme.xaml`): egyedi ablakkeret
+(WindowChrome) saját címsor-gombokkal, gombok, beviteli mezők, legördülő listák, táblázatok,
+görgetősávok, folyamatjelző és a megerősítő/hibaablak (`ThemedDialog`) is. A felső sáv a munkafolyamat
+lépéseit mutatja (kész: türkiz, aktuális: narancs, hibás: piros).
+
+Indításkor a nyitóképen a logó funkcióblokkja „kirajzolódik”, majd a logó felcsúszik és beúszik a
+szoftver neve; ezután a nyitókép finoman elhalványul, és megjelenik a kezdőlap. Ha a Windows animációi
+ki vannak kapcsolva, a sorozat gyorsítva fut; `--no-splash` kapcsolóval kihagyható.
+
+Képernyőképek: `TiaStudio.Desktop.exe --screenshot <mappa> [--demo examples\machine-v18.json]`
+ideiglenes mappákkal minden szekciót PNG-be ment (TIA Portalt nem indít). A CI Windows-jobja ezt
+minden pushnál lefuttatja; a képek a `ui-screenshots` ágon és a `ui-screenshots` artifactban
+érhetők el. A logó forrása `docs/assets/logo.svg`, a PNG/ICO változatokat a
+`scripts/tools/render_logo.py` állítja elő.
 
 ## Gyors kezdés (Windows)
 
