@@ -1,6 +1,7 @@
 <Window x:Class="TiaStudio.Desktop.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:TiaStudio.Desktop"
         Style="{StaticResource PortalWindow}"
         Title="TIA Engineering Studio" Icon="Assets/app.ico"
         Width="1366" Height="840" MinWidth="1120" MinHeight="680"
@@ -175,6 +176,9 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="22,16,22,18">
                                 <DockPanel Margin="0,0,0,10">
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Text.Muted}" Margin="12,0,0,0" VerticalAlignment="Bottom" TextWrapping="NoWrap"
+                                               Text="{Binding Source={x:Static local:BuildVersion.DisplayText}, StringFormat='TIA Engineering Studio {0}'}"
+                                               ToolTip="Alkalmazásverzió és git-commit (független a TIA Portal célverziójától)" />
                                     <TextBlock Text="Első lépések" Style="{StaticResource PageTitle}" />
                                     <Border Style="{StaticResource PageHeaderLine}" />
                                 </DockPanel>

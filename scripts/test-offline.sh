@@ -3,6 +3,9 @@
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 
+echo "==> Verziók (docs/VERSIONING.md)"
+python3 "$root/scripts/tools/build_info.py" --check
+
 echo "==> Python"
 PYTHONPATH="$root/src/python" python3 -m unittest discover -s "$root/tests/unit/python" -t "$root/tests/unit/python" -v
 (cd "$root/src/python" && python3 -m generator.template_hashes)

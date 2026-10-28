@@ -5,6 +5,9 @@
 param([string]$Configuration = 'Debug')
 . "$PSScriptRoot\_common.ps1"
 
+Write-Step 'Verziók (docs/VERSIONING.md)'
+Invoke-Checked 'python' @((Join-Path $RepoRoot 'scripts\tools\build_info.py'), '--check')
+
 Write-Step 'Python unit + golden SCL tesztek'
 $env:PYTHONPATH = Join-Path $RepoRoot 'src\python'
 try {

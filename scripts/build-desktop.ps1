@@ -28,6 +28,16 @@ Copy-Item (Join-Path $RepoRoot 'templates\scl\*') $tplTarget
 
 & "$PSScriptRoot\build-tia-workers.ps1" -Configuration $Configuration -OutputRoot (Join-Path $Dist 'workers') -RequireOpenness:$RequireOpenness
 
+Write-Step 'Buildazonosító (build-info.json, docs/VERSIONING.md)'
+$buildInfo = Join-Path $RepoRoot 'scripts\tools\build_info.py'
+Invoke-Checked 'python' @($buildInfo, '--output', (Join-Path $Dist 'build-info.json'))
+foreach ($tia in @('V18', 'V19', 'V20')) {
+    $workerDir = Join-Path $Dist "workers\$tia"
+    if (Test-Path $workerDir) {
+        Invoke-Checked 'python' @($buildInfo, '--tia', $tia, '--output', (Join-Path $workerDir 'build-info.json'))
+    }
+}
+
 Write-Step 'Integritás'
 Push-Location (Join-Path $Dist 'python')
 try { Invoke-Checked 'python' @('-m', 'generator.template_hashes') } finally { Pop-Location }
