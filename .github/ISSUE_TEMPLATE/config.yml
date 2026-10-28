@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Biztonsági sebezhetőség
+    url: https://github.com/BDominik2001/TIAEngineeringStudio/security/advisories/new
+    about: Privát jelzés (SECURITY.md) – ne nyiss róla nyilvános Issue-t.

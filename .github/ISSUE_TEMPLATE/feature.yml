@@ -1,0 +1,43 @@
+name: Új funkció
+description: Új, visszafelé kompatibilis funkció vagy bővítés
+title: "[Modul] "
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Cél
+      description: Mit kell tudnia a szoftvernek, és miért?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Modul
+      multiple: true
+      options: [area:core, area:desktop, area:python, area:rust, area:openness, area:generator, area:hmi, area:docs]
+    validations:
+      required: true
+  - type: dropdown
+    id: tia
+    attributes:
+      label: TIA-verzió
+      multiple: true
+      options: [tia:all, tia:v18, tia:v19, tia:v20]
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Elfogadási feltételek
+      value: |
+        - [ ] …
+        - [ ] Unit tesztek és regressziós tesztek
+        - [ ] Dokumentáció frissítése
+    validations:
+      required: true
+  - type: textarea
+    id: plc
+    attributes:
+      label: PLC-/projektadat-hatás
+      description: Érint-e generált blokkot, DB-t, sablont, sémát, importot? Kell-e migráció?

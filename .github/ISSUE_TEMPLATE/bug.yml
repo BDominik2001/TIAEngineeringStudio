@@ -1,0 +1,43 @@
+name: Hibajelentés
+description: Hibás működés (biztonsági hibát NE itt jelezz, lásd SECURITY.md)
+title: "[Modul] "
+labels: ["type:bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Alkalmazásverzió és commit
+      description: A kezdőlapon látható (pl. v0.1.0 · 70ec2b3), vagy a build-info.json-ból
+    validations:
+      required: true
+  - type: dropdown
+    id: tia
+    attributes:
+      label: TIA-verzió
+      options: [nem érint, V18, V19, V20]
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Környezet
+      description: Windows-verzió, TIA Update, CPU-család
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reprodukálás lépései
+      description: Csak nem bizalmas adatokkal; ügyfélprojektet, jelszót, licencet ne csatolj.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Elvárt és tényleges viselkedés
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Hibakód, napló
+      description: Hibakód (pl. COMPILE_ERROR), a műveleti napló érintett sorai
+      render: text

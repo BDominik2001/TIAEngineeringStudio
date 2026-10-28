@@ -8,6 +8,8 @@ target/
 TestResults/
 dist/
 artifacts/
+ui-screens/
+*.trx
 
 # Python
 __pycache__/
@@ -28,6 +30,11 @@ logs/
 *.zap2[0-9]
 *.als1[0-9]
 *.als2[0-9]
+# TIA globális könyvtárak (verzióhoz kötött bináris; helyette SCL/SimaticML export)
+*.al1[0-9]
+*.al2[0-9]
+*.zal1[0-9]
+*.zal2[0-9]
 
 # Siemens assembly-k: nem commitolhatók és nem terjeszthetők (spec 10.1/11)
 Siemens.Engineering*.dll
@@ -37,3 +44,11 @@ Siemens.Engineering*.dll
 *.snk
 *.key
 .env
+
+# Lokális, gépspecifikus fájlok
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,30 @@
+name: TIA-kompatibilitás
+description: Eltérés vagy tesztigény egy TIA Portal verzión (V18/V19/V20)
+title: "[TIA Vxx] "
+labels: ["area:openness"]
+body:
+  - type: dropdown
+    id: tia
+    attributes:
+      label: TIA-verzió
+      options: [V18, V19, V20]
+    validations:
+      required: true
+  - type: input
+    id: update
+    attributes:
+      label: TIA Update / Openness assembly-verzió
+    validations:
+      required: true
+  - type: textarea
+    id: operation
+    attributes:
+      label: Érintett művelet
+      description: pl. GenerateBlocksFromSource, offline fordítás, SimaticML import
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Eredmény
+      description: tia-integration workflow-futás linkje vagy TRX; a docs/COMPATIBILITY.md melyik sorát érinti
