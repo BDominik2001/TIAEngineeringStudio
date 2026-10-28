@@ -1,0 +1,47 @@
+<Project>
+  <!--
+    Közös build-logika a TiaStudio.TiaAdapter.V18/V19/V20 workerekhez.
+    Elvárt tulajdonságok a projektfájlban: TiaVersion (V18|V19|V20), TiaAssemblyVersion,
+    TiaApiPath (alapérték a tipikus telepítési útvonal; parancssorból felülírható:
+    dotnet build -p:TiaApiPath="D:\Siemens\Portal V18\PublicAPI\V18").
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AssemblyName>TiaStudio.TiaAdapter.$(TiaVersion)</AssemblyName>
+    <RootNamespace>TiaStudio.TiaAdapter.$(TiaVersion)</RootNamespace>
+    <TesOpennessDll>$(TiaApiPath)\Siemens.Engineering.dll</TesOpennessDll>
+    <TesOpennessAvailable Condition="Exists('$(TesOpennessDll)') And '$(TesForceUnlinked)' != 'true'">true</TesOpennessAvailable>
+    <DefineConstants Condition="'$(TesOpennessAvailable)' == 'true'">$(DefineConstants);TES_OPENNESS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\common\TiaStudio.TiaAdapter.Common.csproj" />
+    <Compile Include="$(MSBuildThisFileDirectory)*.cs" Link="OpennessShared\%(Filename)%(Extension)" />
+    <Reference Include="System.Security" />
+  </ItemGroup>
+
+  <!-- A Siemens DLL csak hivatkozás: Private=False, nem másoljuk a kimenetbe és nem kerül Git-be. -->
+  <ItemGroup Condition="'$(TesOpennessAvailable)' == 'true'">
+    <Reference Include="Siemens.Engineering">
+      <HintPath>$(TesOpennessDll)</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="TesReportOpennessLink" BeforeTargets="CoreCompile">
+    <Message Importance="high" Condition="'$(TesOpennessAvailable)' == 'true'" Text="[$(AssemblyName)] Openness linked: $(TesOpennessDll)" />
+    <Message Importance="high" Condition="'$(TesOpennessAvailable)' != 'true'" Text="[$(AssemblyName)] WARNING: $(TesOpennessDll) not found - building an UNLINKED worker that rejects every TIA operation (WORKER_BUILT_WITHOUT_OPENNESS)." />
+  </Target>
+
+  <!-- app.config a helyi telepítés codeBase-ével (strong name ellenőrzés megmarad). -->
+  <Target Name="TesWriteOpennessAppConfig" AfterTargets="Build" Condition="'$(TesOpennessAvailable)' == 'true'">
+    <PropertyGroup>
+      <TesAppConfigText>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)app.config.template').Replace('@TIA_API_PATH@', '$(TiaApiPath)').Replace('@TIA_ASSEMBLY_VERSION@', '$(TiaAssemblyVersion)').Replace('@TIA_VERSION@', '$(TiaVersion)'))</TesAppConfigText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(TargetPath).config" Lines="$(TesAppConfigText)" Overwrite="true" Encoding="UTF-8" />
+  </Target>
+</Project>

@@ -28,32 +28,39 @@ A teljes követelményrendszer: [`TIA_Engineering_Studio_TIA_V18_V19_V20_Projekt
 
 **Fontos:** a V18/V19/V20 Openness-integráció a spec 11.4 szerint csak akkor tekinthető
 kompatibilisnek, ha a `scripts/test-tia-integration.ps1` mindhárom verzióra dokumentáltan lefutott
-(lásd [`docs/COMPATIBILITY_MATRIX.md`](docs/COMPATIBILITY_MATRIX.md)). Jelenleg egyik verzióra sincs
+(lásd [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md)). Jelenleg egyik verzióra sincs
 ilyen eredmény; a felület ezért a telepített verziókat `Not tested` állapottal mutatja.
 
 ## Szerkezet
 
 ```text
-contracts/            JSON-sémák (gépmodell, worker-parancs/-eredmény, manifest, blokk-könyvtár), error-codes.json
-examples/             machine-v18.json, machine-v19.json, machine-v20.json
-python/generator/     SCL-generátor (Python 3.9+, külső függőség nélkül) + templates/
-rust/tes_validator/   determinisztikus validátor, natív x64 DLL (C ABI)
 src/
-  TiaStudio.Domain/              Siemens-független gépmodell, szabály-primitívek, állapotgép
-  TiaStudio.Contracts/           DTO-k, hibakódok, manifest/sandbox/jóváhagyás-integritás
-  TiaStudio.Application/         munkafolyamat (DRAFT → … → SAVED), port interfészek
-  TiaStudio.Infrastructure/      C#-validátor, Rust P/Invoke, Python-folyamat, registry, worker IPC, napló
-  TiaStudio.TiaAdapter.Common/   worker végrehajtási sorrend, Siemens-típusmentes absztrakció
-  TiaStudio.TiaAdapter.OpennessShared/  V18 API-szintű Openness-kód (a workerekbe fordul)
-  TiaStudio.TiaAdapter.V18|V19|V20/     net48 x64 worker EXE, saját Siemens.Engineering.dll-lel
-  TiaStudio.Desktop/             WPF felület (net48 x64)
+  csharp/
+    Desktop/          WPF felület (net48 x64)                      – TiaStudio.Desktop
+    Core/             Siemens-független gépmodell, szabályok, állapotgép – TiaStudio.Domain
+    Application/      munkafolyamat (DRAFT → … → SAVED), port interfészek – TiaStudio.Application
+    Ipc/              worker-protokoll DTO-k, hibakódok, manifest/jóváhagyás-integritás – TiaStudio.Contracts
+    Infrastructure/   C#-validátor, Rust P/Invoke, Python-folyamat, registry, worker IPC, napló
+  python/
+    generator/        SCL-generátor (Python 3.9+, külső függőség nélkül)
+    ai/               későbbi AI-asszisztens (még nincs implementálva)
+  rust/
+    validator/        determinisztikus validátor, natív x64 DLL (C ABI) – tes_validator crate
+  tia-adapters/
+    common/           worker végrehajtási sorrend, Siemens-típusmentes absztrakció
+    openness-shared/  V18 API-szintű Openness-kód (a workerekbe fordul)
+    v18/ v19/ v20/    net48 x64 worker EXE, saját Siemens.Engineering.dll-lel
+contracts/            JSON-sémák (gépmodell, worker-parancs/-eredmény, manifest, blokk-könyvtár), error-codes.json
+templates/scl/        verziózott PLC-sablonok (template-set.json: azonosító, verzió, SHA-256)
 tests/
-  Contracts/validation-cases.json   közös esetek: C#, Python és Rust is ezt futtatja
-  GoldenScl/V18|V19|V20/            elvárt SCL-bájtok
-  Unit/TiaStudio.UnitTests/         C# unit tesztek (TIA nélkül)
-  Integration/TiaStudio.IntegrationTests/  Rust DLL, Python-folyamat, teljes munkafolyamat; valódi TIA env-vel
+  unit/               C# (TiaStudio.UnitTests) és Python unit tesztek – TIA nélkül
+  contracts/          validation-cases.json: közös esetek, C#, Python és Rust is ezt futtatja
+  integration/        folyamatközi tesztek: Rust DLL, Python-folyamat, teljes munkafolyamat
+  tia/                valódi TIA Portal Openness tesztek (csak beállított TIA-gépen)
+  regression/golden-scl/  elvárt SCL-bájtok V18/V19/V20-ra
+examples/             machine-v18.json, machine-v19.json, machine-v20.json
 scripts/              bootstrap, build-*, configure-workers, check-environment, test-*
-docs/                 architektúra, szerződések, biztonság, kompatibilitás, verziónkénti leírások, üzemeltetés
+docs/                 architektúra, verziózás, branchelés, kompatibilitás, kiadás, biztonság, üzemeltetés
 ```
 
 ## Felület
@@ -61,7 +68,7 @@ docs/                 architektúra, szerződések, biztonság, kompatibilitás,
 A kezelőfelület a TIA Portal portál nézetének színvilágát követi: fekete fejléc türkiz kiemeléssel,
 sötét palaszürke bal oldali navigációs csempék (a kiválasztott világos, narancs jelölővel), kékesszürke
 műveleti oszlop fogaskerék-vízjellel és pont-hivatkozásokkal, világosszürke munkaterület kártyákkal.
-Minden vezérlő saját sablont kap (`src/TiaStudio.Desktop/Themes/PortalTheme.xaml`): egyedi ablakkeret
+Minden vezérlő saját sablont kap (`src/csharp/Desktop/Themes/PortalTheme.xaml`): egyedi ablakkeret
 (WindowChrome) saját címsor-gombokkal, gombok, beviteli mezők, legördülő listák, táblázatok,
 görgetősávok, folyamatjelző és a megerősítő/hibaablak (`ThemedDialog`) is. A felső sáv a munkafolyamat
 lépéseit mutatja (kész: türkiz, aktuális: narancs, hibás: piros).
@@ -103,11 +110,11 @@ TIA-műveletet `WORKER_BUILT_WITHOUT_OPENNESS` hibával utasít el. Másik gépr
 ## Parancssor (TIA nélkül)
 
 ```powershell
-cd python
-python -m unittest discover -s tests -v
-python -m generator.main --input ..\examples\machine-v18.json --output ..\generated\v18-demo
+$env:PYTHONPATH = "$PWD\src\python"
+python -m unittest discover -s tests\unit\python -t tests\unit\python -v
+python -m generator.main --input examples\machine-v18.json --output generated\v18-demo
 
-cd ..\rust\tes_validator
+cd src\rust\validator
 cargo test
 cargo build --release
 ```
@@ -125,6 +132,6 @@ Bármely hiba `FAILED`; onnan csak újrakezdés (DRAFT) vezet tovább. Részlete
 ## Dokumentáció
 
 - [Architektúra](docs/ARCHITECTURE.md) · [API-szerződések](docs/API_CONTRACTS.md) · [Validációs szabályok](docs/VALIDATION_RULES.md)
-- [Biztonsági szabályok](docs/SECURITY_RULES.md) · [Kompatibilitási mátrix](docs/COMPATIBILITY_MATRIX.md)
+- [Biztonsági szabályok](docs/SECURITY_RULES.md) · [Kompatibilitási mátrix](docs/COMPATIBILITY.md)
 - [TIA V18](docs/TIA_V18.md) · [TIA V19](docs/TIA_V19.md) · [TIA V20](docs/TIA_V20.md)
 - [Blokk-könyvtárak](docs/BLOCK_LIBRARY.md) · [Üzemeltetés](docs/OPERATIONS.md) · [Ütemterv és döntési napló](docs/ROADMAP.md)

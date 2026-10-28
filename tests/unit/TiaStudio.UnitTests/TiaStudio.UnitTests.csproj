@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- TIA nélkül futó unit tesztek. Windows alatt net48-on is futnak. -->
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">net48;net8.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>TiaStudio.UnitTests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\csharp\Infrastructure\TiaStudio.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\tia-adapters\common\TiaStudio.TiaAdapter.Common.csproj" />
+  </ItemGroup>
+</Project>

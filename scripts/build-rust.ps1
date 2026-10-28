@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    A Rust validátor tesztelése és x64 release DLL építése (rust\tes_validator\target\release\tes_validator.dll).
+    A Rust validátor tesztelése és x64 release DLL építése (src\rust\validator\target\release\tes_validator.dll).
 #>
 param([switch]$SkipTests)
 . "$PSScriptRoot\_common.ps1"
 
-Push-Location (Join-Path $RepoRoot 'rust\tes_validator')
+Push-Location (Join-Path $RepoRoot 'src\rust\validator')
 try {
     if (-not $SkipTests) {
         Write-Step 'cargo test'

@@ -11,7 +11,7 @@ protokoll-/sémaverzió-növelés és migrációs teszt kötelező (spec 10.2).
 | Generálási / importcsomag-manifest | `contracts/generation-manifest.schema.json` | `manifest_version` 1.0 (generátor), 1.1 (könyvtárimport) |
 | Blokk-könyvtár index | `contracts/block-library.schema.json` (`library.json`) | `library_format_version` 1.0 |
 | Hibakódok | `contracts/error-codes.json` | `error_codes_version` 1.1 |
-| Rust FFI | `rust/tes_validator/include/tes_validator.h` | ABI 1 |
+| Rust FFI | `src/rust/validator/include/tes_validator.h` | ABI 1 |
 | Sandbox-marker | `.tes-sandbox.json` (`TiaStudio.Contracts.SandboxMarker`) | `marker_version` 1.0 |
 
 ## Worker hívása

@@ -22,7 +22,7 @@ Write-Step 'NuGet restore'
 Invoke-Checked 'dotnet' @('restore', (Join-Path $RepoRoot 'TIA-Engineering-Studio.sln'))
 
 Write-Step 'Sablonhash-ek ellenőrzése'
-Push-Location (Join-Path $RepoRoot 'python')
+Push-Location (Join-Path $RepoRoot 'src\python')
 try { Invoke-Checked 'python' @('-m', 'generator.template_hashes') } finally { Pop-Location }
 
 Write-Host "`nKész. Következő lépés: scripts\check-environment.ps1, majd scripts\test-offline.ps1" -ForegroundColor Green

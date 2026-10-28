@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Közös worker-logika, Siemens-típusoktól MENTES. A Siemens API-t ismerő kód
+    a TiaStudio.TiaAdapter.OpennessShared forrásmappában van, amelyet a V18/V19/V20
+    worker projektek a saját Siemens.Engineering.dll referenciájukkal fordítanak.
+    Nem hivatkozhat a WPF projektre.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>TiaStudio.TiaAdapter.Common</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\csharp\Ipc\TiaStudio.Contracts.csproj" />
+  </ItemGroup>
+</Project>

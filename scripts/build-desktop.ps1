@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     Teljes kiadási elrendezés építése a dist\TiaEngineeringStudio mappába:
-    Desktop (WPF, net48 x64) + tes_validator.dll + python\generator + workers\V18..V20 + appsettings.json.
+    Desktop (WPF, net48 x64) + tes_validator.dll + python\generator + templates\scl + workers\V18..V20 + appsettings.json.
 #>
 param(
     [string]$Configuration = 'Release',
@@ -14,13 +14,17 @@ if (Test-Path $Dist) { throw "A kimeneti mappa már létezik: $Dist (automatikus
 
 & "$PSScriptRoot\build-rust.ps1" -SkipTests
 Write-Step 'Desktop'
-Invoke-Checked 'dotnet' @('build', (Join-Path $RepoRoot 'src\TiaStudio.Desktop\TiaStudio.Desktop.csproj'), '-c', $Configuration, '-o', $Dist)
-Copy-Item (Join-Path $RepoRoot 'rust\tes_validator\target\release\tes_validator.dll') $Dist
+Invoke-Checked 'dotnet' @('build', (Join-Path $RepoRoot 'src\csharp\Desktop\TiaStudio.Desktop.csproj'), '-c', $Configuration, '-o', $Dist)
+Copy-Item (Join-Path $RepoRoot 'src\rust\validator\target\release\tes_validator.dll') $Dist
 
 Write-Step 'Python generátor'
 $pyTarget = Join-Path $Dist 'python\generator'
 New-Item -ItemType Directory -Force $pyTarget | Out-Null
-Copy-Item (Join-Path $RepoRoot 'python\generator\*') $pyTarget -Recurse -Exclude '__pycache__'
+Copy-Item (Join-Path $RepoRoot 'src\python\generator\*') $pyTarget -Recurse -Exclude '__pycache__'
+# A verziózott sablonkészlet a generátor fölötti templates\scl mappában (render.py keresési sorrendje)
+$tplTarget = Join-Path $Dist 'templates\scl'
+New-Item -ItemType Directory -Force $tplTarget | Out-Null
+Copy-Item (Join-Path $RepoRoot 'templates\scl\*') $tplTarget
 
 & "$PSScriptRoot\build-tia-workers.ps1" -Configuration $Configuration -OutputRoot (Join-Path $Dist 'workers') -RequireOpenness:$RequireOpenness
 

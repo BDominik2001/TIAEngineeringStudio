@@ -71,7 +71,7 @@ Részletek: [BLOCK_LIBRARY.md](BLOCK_LIBRARY.md).
 
 Az `OpennessShared/OpennessBackend.cs` a TIA Portal Openness V18 kézikönyv (12/2022) fejezeteire
 hivatkozik a kódkommentekben; a kézikönyvvel való tételes összevetés és a futásidőben még igazolandó
-pontok: [COMPATIBILITY_MATRIX.md](COMPATIBILITY_MATRIX.md#openness-api--összevetés-a-v18-kézikönyvvel).
+pontok: [COMPATIBILITY.md](COMPATIBILITY.md#openness-api--összevetés-a-v18-kézikönyvvel).
 
 ## Generált PLC-modulstratégia (spec 7.2)
 

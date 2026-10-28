@@ -5,29 +5,31 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6F4C42BA-A41A-47F2-B713-C9E4D0E401BE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.Domain", "src\TiaStudio.Domain\TiaStudio.Domain.csproj", "{5D5D9119-32B3-44B0-B38C-6ED7496BB498}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.Domain", "src\csharp\Core\TiaStudio.Domain.csproj", "{5D5D9119-32B3-44B0-B38C-6ED7496BB498}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.Contracts", "src\TiaStudio.Contracts\TiaStudio.Contracts.csproj", "{DD9093C3-8CB2-47D7-A663-AFCCEE12379D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.Contracts", "src\csharp\Ipc\TiaStudio.Contracts.csproj", "{DD9093C3-8CB2-47D7-A663-AFCCEE12379D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.Application", "src\TiaStudio.Application\TiaStudio.Application.csproj", "{901CF552-822D-4B67-AEF9-DC9F5710C889}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.Application", "src\csharp\Application\TiaStudio.Application.csproj", "{901CF552-822D-4B67-AEF9-DC9F5710C889}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.Infrastructure", "src\TiaStudio.Infrastructure\TiaStudio.Infrastructure.csproj", "{623488A0-F676-48FF-B3E1-398A097D52AE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.Infrastructure", "src\csharp\Infrastructure\TiaStudio.Infrastructure.csproj", "{623488A0-F676-48FF-B3E1-398A097D52AE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.TiaAdapter.Common", "src\TiaStudio.TiaAdapter.Common\TiaStudio.TiaAdapter.Common.csproj", "{3FE25C44-EE0C-42EE-A5C3-7B4F8E6773E9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.TiaAdapter.Common", "src\tia-adapters\common\TiaStudio.TiaAdapter.Common.csproj", "{3FE25C44-EE0C-42EE-A5C3-7B4F8E6773E9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.TiaAdapter.V18", "src\TiaStudio.TiaAdapter.V18\TiaStudio.TiaAdapter.V18.csproj", "{E5CC1780-0E7F-4AA0-98B6-40BC12B47E18}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.TiaAdapter.V18", "src\tia-adapters\v18\TiaStudio.TiaAdapter.V18.csproj", "{E5CC1780-0E7F-4AA0-98B6-40BC12B47E18}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.TiaAdapter.V19", "src\TiaStudio.TiaAdapter.V19\TiaStudio.TiaAdapter.V19.csproj", "{58C6B0B9-9ED5-4364-822F-4648480DF9AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.TiaAdapter.V19", "src\tia-adapters\v19\TiaStudio.TiaAdapter.V19.csproj", "{58C6B0B9-9ED5-4364-822F-4648480DF9AC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.TiaAdapter.V20", "src\TiaStudio.TiaAdapter.V20\TiaStudio.TiaAdapter.V20.csproj", "{A0D502FC-759C-49DD-B926-0437CF12EBDB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.TiaAdapter.V20", "src\tia-adapters\v20\TiaStudio.TiaAdapter.V20.csproj", "{A0D502FC-759C-49DD-B926-0437CF12EBDB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{467EB9D1-FCCB-42A1-9338-3BD87E13D0AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.UnitTests", "tests\Unit\TiaStudio.UnitTests\TiaStudio.UnitTests.csproj", "{1816783C-5643-4B6A-AD98-F2934F149E68}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.UnitTests", "tests\unit\TiaStudio.UnitTests\TiaStudio.UnitTests.csproj", "{1816783C-5643-4B6A-AD98-F2934F149E68}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.IntegrationTests", "tests\Integration\TiaStudio.IntegrationTests\TiaStudio.IntegrationTests.csproj", "{F201A099-C4EC-4813-A7D4-C7FE564364B1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.IntegrationTests", "tests\integration\TiaStudio.IntegrationTests\TiaStudio.IntegrationTests.csproj", "{F201A099-C4EC-4813-A7D4-C7FE564364B1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TiaStudio.Desktop", "src\TiaStudio.Desktop\TiaStudio.Desktop.csproj", "{B7C1D2E3-4F50-4A61-9B72-8C93D4E5F607}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TiaStudio.Desktop", "src\csharp\Desktop\TiaStudio.Desktop.csproj", "{B7C1D2E3-4F50-4A61-9B72-8C93D4E5F607}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TiaStudio.TiaIntegrationTests", "tests\tia\TiaStudio.TiaIntegrationTests\TiaStudio.TiaIntegrationTests.csproj", "{D19C2CDB-6E4F-4FF0-9F8E-4D7471DBDE09}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -82,6 +84,10 @@ Global
 		{B7C1D2E3-4F50-4A61-9B72-8C93D4E5F607}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7C1D2E3-4F50-4A61-9B72-8C93D4E5F607}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7C1D2E3-4F50-4A61-9B72-8C93D4E5F607}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D19C2CDB-6E4F-4FF0-9F8E-4D7471DBDE09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D19C2CDB-6E4F-4FF0-9F8E-4D7471DBDE09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D19C2CDB-6E4F-4FF0-9F8E-4D7471DBDE09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D19C2CDB-6E4F-4FF0-9F8E-4D7471DBDE09}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5D5D9119-32B3-44B0-B38C-6ED7496BB498} = {6F4C42BA-A41A-47F2-B713-C9E4D0E401BE}
@@ -95,5 +101,6 @@ Global
 		{1816783C-5643-4B6A-AD98-F2934F149E68} = {467EB9D1-FCCB-42A1-9338-3BD87E13D0AD}
 		{F201A099-C4EC-4813-A7D4-C7FE564364B1} = {467EB9D1-FCCB-42A1-9338-3BD87E13D0AD}
 		{B7C1D2E3-4F50-4A61-9B72-8C93D4E5F607} = {6F4C42BA-A41A-47F2-B713-C9E4D0E401BE}
+		{D19C2CDB-6E4F-4FF0-9F8E-4D7471DBDE09} = {467EB9D1-FCCB-42A1-9338-3BD87E13D0AD}
 	EndGlobalSection
 EndGlobal

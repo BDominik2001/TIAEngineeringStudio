@@ -6,11 +6,12 @@ param([string]$Configuration = 'Debug')
 . "$PSScriptRoot\_common.ps1"
 
 Write-Step 'Python unit + golden SCL tesztek'
-Push-Location (Join-Path $RepoRoot 'python')
+$env:PYTHONPATH = Join-Path $RepoRoot 'src\python'
 try {
-    Invoke-Checked 'python' @('-m', 'unittest', 'discover', '-s', 'tests', '-v')
+    $pyTests = Join-Path $RepoRoot 'tests\unit\python'
+    Invoke-Checked 'python' @('-m', 'unittest', 'discover', '-s', $pyTests, '-t', $pyTests, '-v')
     Invoke-Checked 'python' @('-m', 'generator.template_hashes')
-} finally { Pop-Location }
+} finally { Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue }
 
 & "$PSScriptRoot\build-rust.ps1"
 

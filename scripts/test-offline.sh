@@ -4,11 +4,12 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "==> Python"
-(cd "$root/python" && python3 -m unittest discover -s tests -v && python3 -m generator.template_hashes)
+PYTHONPATH="$root/src/python" python3 -m unittest discover -s "$root/tests/unit/python" -t "$root/tests/unit/python" -v
+(cd "$root/src/python" && python3 -m generator.template_hashes)
 
 echo "==> Rust"
 (
-  cd "$root/rust/tes_validator"
+  cd "$root/src/rust/validator"
   cargo test
   if cargo clippy --version >/dev/null 2>&1; then cargo clippy --all-targets -- -D warnings; fi
   cargo build --release

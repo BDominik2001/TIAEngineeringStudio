@@ -6,9 +6,9 @@
 (a halvány, 8 alatti alfájú háttérszemcsék törlése, levágás a tartalomra, négyzetes kitöltés).
 Ezután a mesterképekből mindig újraépülnek a származtatott fájlok:
 
-  src/TiaStudio.Desktop/Assets/app.ico         alkalmazásikon (keretes ikon, 16-256 px)
-  src/TiaStudio.Desktop/Assets/logo-mark.png   ikon keret nélkül (fejléc, kezdőlap, nyitókép 1. fázis)
-  src/TiaStudio.Desktop/Assets/logo-full.png   teljes logó felirattal (nyitókép 2. fázis)
+  src/csharp/Desktop/Assets/app.ico         alkalmazásikon (keretes ikon, 16-256 px)
+  src/csharp/Desktop/Assets/logo-mark.png   ikon keret nélkül (fejléc, kezdőlap, nyitókép 1. fázis)
+  src/csharp/Desktop/Assets/logo-full.png   teljes logó felirattal (nyitókép 2. fázis)
 """
 import argparse
 import os
@@ -18,7 +18,7 @@ from PIL import Image
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 BRAND = os.path.join(ROOT, "docs", "assets", "brand")
-ASSETS = os.path.join(ROOT, "src", "TiaStudio.Desktop", "Assets")
+ASSETS = os.path.join(ROOT, "src", "csharp", "Desktop", "Assets")
 MASTERS = ["icon-frame.png", "icon-outline.png", "icon.png", "logo-full.png", "logo-app.png"]
 MASTER_SIZE = 768
 

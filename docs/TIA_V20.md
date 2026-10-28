@@ -3,12 +3,12 @@
 | Tétel | Érték |
 |---|---|
 | Projektkiterjesztés | `.ap20` (más kiterjesztés: `PROJECT_VERSION_MISMATCH`) |
-| Worker | `TiaStudio.TiaAdapter.V20.exe` (net48, x64) – `src/TiaStudio.TiaAdapter.V20` |
+| Worker | `TiaStudio.TiaAdapter.V20.exe` (net48, x64) – `src/tia-adapters/v20` |
 | Tipikus DLL | `C:\Program Files\Siemens\Automation\Portal V20\PublicAPI\V20\Siemens.Engineering.dll` (csak alapérték; a valódi helyet a registry adja) |
 | Registry | `HKLM\SOFTWARE\Siemens\Automation\Openness\20.x\PublicAPI\20.x.x.x` |
 | Assembly-verzió | 20.0.0.0, public key token `d29ec89bac048f84` |
 | API-szint | V18 közös funkciókészlet (`api_level = V18-common`) |
-| Integrációs teszt állapota | **nem futott** – lásd [COMPATIBILITY_MATRIX.md](COMPATIBILITY_MATRIX.md) |
+| Integrációs teszt állapota | **nem futott** – lásd [COMPATIBILITY.md](COMPATIBILITY.md) |
 
 A „What's new in TIA Portal Openness V20" (01/2025) szerint a V20 a V17/V18/V19 DLL-eket is szállítja. A felderítés ezért **csak a natív `20.x` PublicAPI-kulcsot** fogadja el V20-nak; egy V20 telepítés V18-as kompatibilitási API-ja nem jelent telepített V18-at (`OlderApiInsideNewerInstallIsNotTreatedAsOlderTia`).
 
@@ -19,7 +19,7 @@ A V21-ben a Siemens átalakította az assembly-felosztást (`Siemens.Engineering
 ```powershell
 .\scripts\build-tia-workers.ps1 -Versions V20 -RequireOpenness
 # vagy kézzel, nem szabványos telepítési hellyel:
-dotnet build .\src\TiaStudio.TiaAdapter.V20\TiaStudio.TiaAdapter.V20.csproj -c Release -p:TiaApiPath="D:\Siemens\Portal V20\PublicAPI\V20"
+dotnet build .\src\tia-adapters\v20\TiaStudio.TiaAdapter.V20.csproj -c Release -p:TiaApiPath="D:\Siemens\Portal V20\PublicAPI\V20"
 ```
 
 A build után a kimeneti `TiaStudio.TiaAdapter.V20.exe.config` `codeBase`-e a fenti DLL-re mutat; más gépen

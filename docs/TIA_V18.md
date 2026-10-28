@@ -3,14 +3,14 @@
 | Tétel | Érték |
 |---|---|
 | Projektkiterjesztés | `.ap18` (más kiterjesztés: `PROJECT_VERSION_MISMATCH`) |
-| Worker | `TiaStudio.TiaAdapter.V18.exe` (net48, x64) – `src/TiaStudio.TiaAdapter.V18` |
+| Worker | `TiaStudio.TiaAdapter.V18.exe` (net48, x64) – `src/tia-adapters/v18` |
 | Tipikus DLL | `C:\Program Files\Siemens\Automation\Portal V18\PublicAPI\V18\Siemens.Engineering.dll` (csak alapérték; a valódi helyet a registry adja) |
 | Registry | `HKLM\SOFTWARE\Siemens\Automation\Openness\18.x\PublicAPI\18.x.x.x` |
 | Assembly-verzió | 18.0.0.0, public key token `d29ec89bac048f84` |
 | API-szint | V18 közös funkciókészlet (`api_level = V18-common`) |
-| Integrációs teszt állapota | **nem futott** – lásd [COMPATIBILITY_MATRIX.md](COMPATIBILITY_MATRIX.md) |
+| Integrációs teszt állapota | **nem futott** – lásd [COMPATIBILITY.md](COMPATIBILITY.md) |
 
-A V18 a három célverzió **közös API-minimuma**. A közös forrás (`src/TiaStudio.TiaAdapter.OpennessShared`) kizárólag a V18 kézikönyvben (TIA Portal Openness, 12/2022) ismertetett szolgáltatásokat használja:
+A V18 a három célverzió **közös API-minimuma**. A közös forrás (`src/tia-adapters/openness-shared`) kizárólag a V18 kézikönyvben (TIA Portal Openness, 12/2022) ismertetett szolgáltatásokat használja:
 
 - kapcsolódás és projektnyitás: `TiaPortal(TiaPortalMode.WithoutUserInterface)`, `Projects.Open(FileInfo)` (kézikönyv 78–83. o.)
 - telepített verziók: `HKLM\SOFTWARE\Siemens\Automation\Openness\18.0\PublicAPI\18.0.0.0` (68–69. o.)
@@ -25,7 +25,7 @@ A V18 a három célverzió **közös API-minimuma**. A közös forrás (`src/Tia
 ```powershell
 .\scripts\build-tia-workers.ps1 -Versions V18 -RequireOpenness
 # vagy kézzel, nem szabványos telepítési hellyel:
-dotnet build .\src\TiaStudio.TiaAdapter.V18\TiaStudio.TiaAdapter.V18.csproj -c Release -p:TiaApiPath="D:\Siemens\Portal V18\PublicAPI\V18"
+dotnet build .\src\tia-adapters\v18\TiaStudio.TiaAdapter.V18.csproj -c Release -p:TiaApiPath="D:\Siemens\Portal V18\PublicAPI\V18"
 ```
 
 A build után a kimeneti `TiaStudio.TiaAdapter.V18.exe.config` `codeBase`-e a fenti DLL-re mutat; más gépen

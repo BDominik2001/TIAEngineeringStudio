@@ -7,8 +7,8 @@ ellenőrzi, azonos hibakódokkal (`contracts/error-codes.json`):
 | Réteg | Implementáció | Mikor fut |
 |---|---|---|
 | C# | `TiaStudio.Infrastructure.Json.MachineProjectJsonValidator` (primitívek: `TiaStudio.Domain.Rules`) | DRAFT → VALIDATED (azonnali GUI-visszajelzés) |
-| Rust | `rust/tes_validator` (`tes_validate`) | VALIDATED → CHECKED (determinisztikus statikus ellenőrzés) |
-| Python | `python/generator/validation.py` | generálás előtt, védelmi mélységként |
+| Rust | `src/rust/validator` (`tes_validate`) | VALIDATED → CHECKED (determinisztikus statikus ellenőrzés) |
+| Python | `src/python/generator/validation.py` | generálás előtt, védelmi mélységként |
 
 A hibák sorrendje determinisztikus: a dokumentumbejárás sorrendjében (mezők a lenti
 sorrendben, eszközök indexsorrendben) keletkeznek. Az útvonal (`path`) formátuma:

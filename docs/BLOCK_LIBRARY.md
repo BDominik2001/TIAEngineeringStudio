@@ -97,5 +97,5 @@ A gépmodell bármely szerkesztése visszaváltja a munkafolyamatot gépmodell-m
   (`GenerateBlocksFromSource(PlcBlockUserGroup, GenerateBlockOption)`); ez későbbi bővítés lehet.
 - PLC-tag-táblák nem részei a könyvtárnak.
 - A valódi Openness-hívásokat (`GenerateSource`, `Export`, `Import`) még nem igazolta integrációs
-  teszt; lásd [COMPATIBILITY_MATRIX.md](COMPATIBILITY_MATRIX.md) és
+  teszt; lásd [COMPATIBILITY.md](COMPATIBILITY.md) és
   `TiaOpennessIntegrationTests.LibraryRoundTripForConfiguredVersion`.

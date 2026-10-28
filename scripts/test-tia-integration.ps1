@@ -5,7 +5,7 @@
     Az ismert jó projektről friss sandbox-másolatot készít (az eredeti nem módosul), majd a
     worker-folyamaton keresztül: felderítés, képességek, száraz futás, jóváhagyás nélküli import
     elutasítása, import + offline fordítás + mentés, ütközés- és hashhiba-elutasítás.
-    A sikeres eredményt kézzel kell rögzíteni a docs\COMPATIBILITY_MATRIX.md-ben, és csak utána
+    A sikeres eredményt kézzel kell rögzíteni a docs\COMPATIBILITY.md-ben, és csak utána
     vehető fel a verzió az appsettings.json integration_tested_versions listájába.
 .EXAMPLE
     .\test-tia-integration.ps1 -Version V18 -KnownGoodProject D:\TIA\Known\Empty1500\Empty1500.ap18
@@ -31,10 +31,10 @@ $env:TES_TIA_PLC_NAME = $PlcName
 $env:TES_WORKERS_DIR = (Resolve-Path $WorkersDir).Path
 try {
     $results = Join-Path $RepoRoot "artifacts\tia-integration-$Version-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
-    Invoke-Checked 'dotnet' @('test', (Join-Path $RepoRoot 'tests\Integration\TiaStudio.IntegrationTests\TiaStudio.IntegrationTests.csproj'),
+    Invoke-Checked 'dotnet' @('test', (Join-Path $RepoRoot 'tests\tia\TiaStudio.TiaIntegrationTests\TiaStudio.TiaIntegrationTests.csproj'),
         '--filter', 'FullyQualifiedName~TiaOpennessIntegrationTests', '--logger', 'trx', '--results-directory', $results)
     Write-Host "`n$Version integrációs teszt sikeres. TRX: $results" -ForegroundColor Green
-    Write-Host 'Rögzítsd a docs\COMPATIBILITY_MATRIX.md-ben, és ellenőrizd kézzel a sandboxban létrejött PLC-objektumokat (spec 11.4).'
+    Write-Host 'Rögzítsd a docs\COMPATIBILITY.md-ben, és ellenőrizd kézzel a sandboxban létrejött PLC-objektumokat (spec 11.4).'
 } finally {
     Remove-Item Env:TES_TIA_INTEGRATION, Env:TES_TIA_KNOWN_GOOD_PROJECT, Env:TES_TIA_PLC_NAME, Env:TES_WORKERS_DIR -ErrorAction SilentlyContinue
 }

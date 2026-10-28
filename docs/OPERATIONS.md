@@ -6,7 +6,8 @@
 TiaEngineeringStudio\
   TiaStudio.Desktop.exe, *.dll, appsettings.json
   tes_validator.dll                 Rust validátor (x64)
-  python\generator\                 SCL-generátor + sablonok (template-set.json hash-ekkel)
+  python\generator\                 SCL-generátor
+  templates\scl\                    verziózott SCL-sablonok (template-set.json hash-ekkel)
   workers\V18\TiaStudio.TiaAdapter.V18.exe(.config)
   workers\V19\...
   workers\V20\...

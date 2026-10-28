@@ -19,7 +19,7 @@ param(
 foreach ($version in $Versions) {
     $null = Get-TiaMajor $version
     $dll = Get-OpennessDllPath $version
-    $project = Join-Path $RepoRoot "src\TiaStudio.TiaAdapter.$version\TiaStudio.TiaAdapter.$version.csproj"
+    $project = Join-Path $RepoRoot "src\tia-adapters\$($version.ToLowerInvariant())\TiaStudio.TiaAdapter.$version.csproj"
     $output = Join-Path $OutputRoot $version
     $arguments = @('build', $project, '-c', $Configuration, '-o', $output)
     if ($dll) {

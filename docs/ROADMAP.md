@@ -46,7 +46,7 @@
 
 ## Nyitott kérdések (spec 14.)
 
-Lásd még a [COMPATIBILITY_MATRIX.md](COMPATIBILITY_MATRIX.md) „Valódi Openness API-n igazolandó pontok" listáját.
+Lásd még a [COMPATIBILITY.md](COMPATIBILITY.md) „Valódi Openness API-n igazolandó pontok" listáját.
 
 - Telepített TIA Update/szervizcsomagok, támogatott Windows-verziók.
 - Használt CPU-k és firmware-ek támogatása V18/V19/V20 alatt.

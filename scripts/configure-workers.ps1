@@ -9,7 +9,7 @@
 param([string]$WorkersRoot = (Join-Path $PSScriptRoot '..\dist\TiaEngineeringStudio\workers'))
 . "$PSScriptRoot\_common.ps1"
 
-$template = Get-Content -Raw (Join-Path $RepoRoot 'src\TiaStudio.TiaAdapter.OpennessShared\app.config.template')
+$template = Get-Content -Raw (Join-Path $RepoRoot 'src\tia-adapters\openness-shared\app.config.template')
 foreach ($version in $SupportedTiaVersions) {
     $exe = Join-Path $WorkersRoot "$version\TiaStudio.TiaAdapter.$version.exe"
     if (-not (Test-Path $exe)) { Write-Host "    ${version}: worker nincs telepítve ($exe)"; continue }
