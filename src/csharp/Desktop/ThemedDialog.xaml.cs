@@ -48,7 +48,7 @@ namespace TiaStudio.Desktop
                     dialog.IconGlyph.Text = "×";
                     break;
                 case Kind.Info:
-                    dialog.IconCircle.Fill = (Brush)dialog.FindResource("Brush.TealStrong");
+                    dialog.IconCircle.Fill = (Brush)dialog.FindResource("Brush.BlueStrong");
                     dialog.IconGlyph.Text = "i";
                     break;
                 default:

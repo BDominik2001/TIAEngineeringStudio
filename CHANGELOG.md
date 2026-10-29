@@ -23,10 +23,21 @@ Kiadott verzió még nincs. Az első tag (`v0.1.0`) csak akkor készül, ha a
 
 ### Módosítva
 
+- Felület: magyar hibaüzenetek és teendők a közös hibakatalógusból (`contracts/error-codes.json`
+  `message_hu`/`hint_hu`, katalógus 1.3); a validációs hibalista és az állapotsor is magyar.
+- Felület: a Napló táblázatos (idő, esemény, állapot, TIA, hibakód, üzenet; a nyers JSON buboréksúgóban).
+- Felület: „Mintamodell betöltése” (a kiadási csomag `examples\` mappájából), „Vissza a gépmodellhez”.
+- Felület: a téma színei a logó palettájából (navy, acélkék, a logó kék íve, borostyán) a korábbi
+  semleges palaszürke/türkiz helyett, hogy a felület ne üssön el a beágyazott logóktól.
 - Openness-integráció a V18 kézikönyv (12/2022) szerint: blokkcsoportok, SimaticML-korlátok,
   offline export, hibakódok (`TIA_PORTAL_TERMINATED`, `LICENSE_MISSING`, `PROJECT_OPEN_FAILED`). *TIA: all*
 - Könyvtárszerkezet a szabályzat szerint (`src/csharp`, `src/python`, `src/rust`, `src/tia-adapters`,
   `templates/scl`, `tests/{unit,contracts,integration,tia,regression}`); a sablonkészlet a generátoron kívül.
+
+### Javítva
+
+- Maximalizált ablaknál a fejléc teteje nagyobb DPI-skálázáson (pl. 150%) lelógott a képernyőről;
+  az ablak most pontosan a monitor munkaterületét kapja.
 
 ### Ismert korlátozások
 

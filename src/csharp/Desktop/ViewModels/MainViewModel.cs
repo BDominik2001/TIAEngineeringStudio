@@ -15,6 +15,8 @@ using TiaStudio.Contracts;
 using TiaStudio.Desktop.Services;
 using TiaStudio.Domain.Model;
 using TiaStudio.Domain.Workflow;
+using TiaStudio.Infrastructure.Localization;
+using TiaStudio.Infrastructure.Logging;
 
 namespace TiaStudio.Desktop.ViewModels
 {
@@ -140,6 +142,8 @@ namespace TiaStudio.Desktop.ViewModels
         private bool statusIsError;
         private WorkflowState lastGoodState = WorkflowState.Draft;
 
+        private static readonly MessageCatalog Messages = MessageCatalog.Default;
+
         public MainViewModel(
             EngineeringWorkflow workflow,
             ITiaWorkerClient workerClient,
@@ -179,15 +183,17 @@ namespace TiaStudio.Desktop.ViewModels
             workflow.StateChanged += (s, e) => OnUi(RefreshFromWorkflow);
             subscribeAuditLines?.Invoke(line => OnUi(() =>
             {
-                AuditLines.Add(line);
-                while (AuditLines.Count > 2000)
+                // Legújabb felül; a napló fájlban teljes marad (logs\audit-*.jsonl).
+                AuditEntries.Insert(0, AuditEntry.Parse(line, Messages));
+                while (AuditEntries.Count > 2000)
                 {
-                    AuditLines.RemoveAt(0);
+                    AuditEntries.RemoveAt(AuditEntries.Count - 1);
                 }
             }));
 
             NewProjectCommand = new RelayCommand(NewProject, () => !IsBusy);
             OpenProjectCommand = new RelayCommand(OpenProject, () => !IsBusy);
+            OpenSampleCommand = new RelayCommand(OpenSample, () => !IsBusy && SamplePath(TiaVersion) != null);
             SaveProjectCommand = new RelayCommand(SaveProject, () => !IsBusy);
             AddCylinderCommand = new RelayCommand(AddCylinder, () => !IsBusy);
             RemoveDeviceCommand = new RelayCommand(() => Devices.Remove(SelectedDevice), () => !IsBusy && SelectedDevice != null);
@@ -258,7 +264,7 @@ namespace TiaStudio.Desktop.ViewModels
 
         public ObservableCollection<CompileMessage> CompileMessages { get; } = new ObservableCollection<CompileMessage>();
 
-        public ObservableCollection<string> AuditLines { get; } = new ObservableCollection<string>();
+        public ObservableCollection<AuditEntry> AuditEntries { get; } = new ObservableCollection<AuditEntry>();
 
         public ObservableCollection<WorkflowStepViewModel> WorkflowSteps { get; } = new ObservableCollection<WorkflowStepViewModel>();
 
@@ -272,6 +278,9 @@ namespace TiaStudio.Desktop.ViewModels
         public ICommand NewProjectCommand { get; }
 
         public ICommand OpenProjectCommand { get; }
+
+        /// <summary>A kiválasztott célverzió mintamodellje (examples\machine-v18.json stb.).</summary>
+        public ICommand OpenSampleCommand { get; }
 
         public ICommand SaveProjectCommand { get; }
 
@@ -434,6 +443,31 @@ namespace TiaStudio.Desktop.ViewModels
             }
         }
 
+        private void OpenSample()
+        {
+            string path = SamplePath(TiaVersion);
+            if (path != null)
+            {
+                LoadProjectFile(path);
+                SelectedSection = 1;
+            }
+        }
+
+        /// <summary>Kiadásban az EXE melletti examples\, fejlesztéskor a repó examples\ mappája.</summary>
+        private static string SamplePath(string tiaVersion)
+        {
+            string name = "machine-" + (tiaVersion ?? TiaVersions.V18).ToLowerInvariant() + ".json";
+            for (DirectoryInfo current = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory); current != null; current = current.Parent)
+            {
+                string candidate = Path.Combine(current.FullName, "examples", name);
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+            return null;
+        }
+
         /// <summary>Gépmodell betöltése fájlból (csak hibamentes 1.1-es modell töltődik be).</summary>
         public void LoadProjectFile(string path)
         {
@@ -441,7 +475,7 @@ namespace TiaStudio.Desktop.ViewModels
             ValidationReport report = modelValidator.Validate(bytes);
             if (!report.Ok)
             {
-                ReplaceAll(Issues, report.Issues.Select(i => i.ToString()));
+                ReplaceAll(Issues, report.Issues.Select(i => Messages.Issue(i.ToString())));
                 StatusMessage = "A fájl nem érvényes 1.1-es gépmodell; nem töltöttük be.";
                 return;
             }
@@ -613,8 +647,8 @@ namespace TiaStudio.Desktop.ViewModels
         private void Show(StepResult result)
         {
             StatusIsError = !result.Ok;
-            StatusMessage = result.Ok ? result.Message : result.ErrorCode + ": " + result.Message;
-            ReplaceAll(Issues, result.Details);
+            StatusMessage = Messages.Status(result.Ok, result.ErrorCode, result.Message);
+            ReplaceAll(Issues, result.Details.Select(Messages.Issue));
             RefreshFromWorkflow();
         }
 

@@ -8,6 +8,10 @@
     <ProjectReference Include="..\Application\TiaStudio.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- A felület magyar hibaszövegei és teendői: a közös hibakatalógus (egy forrás a C#/Python/Rust kódokkal) -->
+    <EmbeddedResource Include="..\..\..\contracts\error-codes.json" LogicalName="TiaStudio.error-codes.json" Link="Localization\error-codes.json" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
   </ItemGroup>

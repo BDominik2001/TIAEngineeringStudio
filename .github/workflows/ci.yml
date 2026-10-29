@@ -3,21 +3,30 @@ name: ci
 # CI A szint (docs/BRANCHING.md, docs/RELEASE_PROCESS.md): minden push és Pull Request ellenőrzése,
 # TIA Portal nélkül. A valódi V18/V19/V20 integráció (B szint) külön, jóváhagyással futó workflow:
 # .github/workflows/tia-integration.yml. Ez a workflow soha nem fut self-hosted (TIA) runneren.
+#
+# Push: a main és az AI-munkamenetek ágai (ezek publikálják a UI-képernyőképeket is); minden más ág
+# (feature/*, fix/*, dependabot/*) a Pull Requesten fut, így nincs dupla futás.
 on:
   push:
+    branches: [main, "claude/**"]
   pull_request:
 
 permissions:
   contents: read
 
+# A main minden commitja végigfut (a merge-ök nem szakítják meg egymást); más ágon az újabb push
+# leállítja a régebbi futást.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   checks:
     name: lint, format, schema, determinism, security
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # a gitleaks PR-eseménynél a PR commitjait kéri le
     steps:
       - uses: actions/checkout@v7
         with:

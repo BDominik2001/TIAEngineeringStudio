@@ -68,13 +68,14 @@ docs/                 architektúra, verziózás, branchelés, kompatibilitás, 
 
 ## Felület
 
-A kezelőfelület a TIA Portal portál nézetének színvilágát követi: fekete fejléc türkiz kiemeléssel,
-sötét palaszürke bal oldali navigációs csempék (a kiválasztott világos, narancs jelölővel), kékesszürke
-műveleti oszlop fogaskerék-vízjellel és pont-hivatkozásokkal, világosszürke munkaterület kártyákkal.
+A kezelőfelület elrendezése a TIA Portal portál nézetét követi, színei a logóból származnak: mély navy
+fejléc a logó kék ívének kiemelőszínével, acélkék bal oldali navigációs csempék (a kiválasztott világos,
+borostyán jelölővel), navy–acélkék műveleti oszlop fogaskerék-vízjellel és pont-hivatkozásokkal, hideg
+világos kékesszürke munkaterület kártyákkal. Piros és zöld csak hiba- és sikerállapotot jelöl.
 Minden vezérlő saját sablont kap (`src/csharp/Desktop/Themes/PortalTheme.xaml`): egyedi ablakkeret
 (WindowChrome) saját címsor-gombokkal, gombok, beviteli mezők, legördülő listák, táblázatok,
 görgetősávok, folyamatjelző és a megerősítő/hibaablak (`ThemedDialog`) is. A felső sáv a munkafolyamat
-lépéseit mutatja (kész: türkiz, aktuális: narancs, hibás: piros).
+lépéseit mutatja (kész: kék, aktuális: narancs, hibás: piros).
 
 Indításkor a nyitóképen előbb a logó ikonja ugrik be és felragyog, majd felcsúszik és átúszik a
 teljes logóba, amelynek felirata (TIA / ENGINEERING / STUDIO) fentről lefelé tárul fel; ezután a

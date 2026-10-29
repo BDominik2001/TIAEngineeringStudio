@@ -70,9 +70,9 @@
                 <Border Height="3" VerticalAlignment="Top" CornerRadius="12,12,0,0">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                            <GradientStop Offset="0" Color="#003E9AB5" />
-                            <GradientStop Offset="0.5" Color="#FF5AA9E6" />
-                            <GradientStop Offset="1" Color="#003E9AB5" />
+                            <GradientStop Offset="0" Color="#001E9BF0" />
+                            <GradientStop Offset="0.5" Color="#FF4FB8F2" />
+                            <GradientStop Offset="1" Color="#001E9BF0" />
                         </LinearGradientBrush>
                     </Border.Background>
                 </Border>
@@ -146,7 +146,7 @@
                         </Grid>
                     </Grid>
 
-                    <Border x:Name="AccentLine" Height="2" Width="0" Background="#F39C12" HorizontalAlignment="Center" Margin="0,6,0,0" CornerRadius="1" />
+                    <Border x:Name="AccentLine" Height="2" Width="0" Background="#F8A800" HorizontalAlignment="Center" Margin="0,6,0,0" CornerRadius="1" />
                     <TextBlock x:Name="Tagline" Text="Siemens TIA Portal  V18 · V19 · V20" Foreground="#9FB0C3" FontSize="13"
                                HorizontalAlignment="Center" Margin="0,10,0,0" Opacity="0" />
                 </StackPanel>

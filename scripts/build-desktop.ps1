@@ -26,6 +26,10 @@ Copy-Item (Join-Path $RepoRoot 'src\python\generator\*') $pyTarget -Recurse -Exc
 $tplTarget = Join-Path $Dist 'templates\scl'
 New-Item -ItemType Directory -Force $tplTarget | Out-Null
 Copy-Item (Join-Path $RepoRoot 'templates\scl\*') $tplTarget
+# Mintamodellek (Kezdőlap / Gépmodell: Mintamodell betöltése)
+$examplesTarget = Join-Path $Dist 'examples'
+New-Item -ItemType Directory -Force $examplesTarget | Out-Null
+Copy-Item (Join-Path $RepoRoot 'examples\*.json') $examplesTarget
 
 & "$PSScriptRoot\build-tia-workers.ps1" -Configuration $Configuration -Versions $TiaVersions -OutputRoot (Join-Path $Dist 'workers') -RequireOpenness:$RequireOpenness
 
