@@ -4,6 +4,11 @@ name: release
 # (TIAStudio_<ver>_TIA18|19|20_win-x64.zip), checksums.sha256, release-manifest.json és egy
 # PISZKOZAT GitHub Release, amelyet a kiadási checklist után ember publikál.
 #
+# Tag: vX.Y.Z (stabil) vagy vX.Y.Z-alpha|beta|rc.N (előzetes); X.Y.Z = Directory.Build.props <Version>.
+# Kiadási kapu: stabil kiadáshoz mindhárom TIA-verzió valódi integrációs tesztje kötelező (hiányzó
+# változó vagy ki nem futott teszt = hiba); előzetes kiadás teszt nélkül is készülhet, de a csomag
+# "Untested development build" jelölést kap. Sikertelen teszt mindig megállítja a kiadást.
+#
 # Biztonság (szabályzat 9. pont):
 # - csak tag pushra / kézi indításra fut, Pull Requestre soha;
 # - a csomagolás a licencelt TIA-t futtató self-hosted runneren, a "release" environment
@@ -34,6 +39,9 @@ env:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      prerelease: ${{ steps.tag.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -44,11 +52,11 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Tag matches the application version
+      - name: Tag format, base version and CHANGELOG section
+        id: tag
         run: |
-          version=$(python scripts/tools/build_info.py | python -c "import json,sys; print(json.load(sys.stdin)['appVersion'])")
-          [ "$TAG" = "v$version" ] || { echo "tag $TAG != v$version (Directory.Build.props)"; exit 1; }
           python scripts/tools/build_info.py --check
+          python scripts/tools/release_manifest.py --check-tag "$TAG" | tee -a "$GITHUB_OUTPUT"
       - name: Release does not exist yet (tags and assets are immutable)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -56,8 +64,6 @@ jobs:
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release $TAG already exists - publish a new PATCH version instead"; exit 1
           fi
-      - name: CHANGELOG has a section for this version
-        run: grep -q "^## \[${TAG#v}\]" CHANGELOG.md
       - name: Offline tests
         run: |
           rustup component add clippy
@@ -72,32 +78,53 @@ jobs:
     # Runner-címkék: a TIA Portal + Openness adott verziója telepítve (docs/RELEASE_PROCESS.md)
     runs-on: [self-hosted, windows, x64, "tia-${{ matrix.tia }}"]
     environment: release
+    env:
+      RELEASE_VERSION: ${{ needs.verify.outputs.version }}
+      PRERELEASE: ${{ needs.verify.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
       - name: Package (worker linked against the installed Openness)
         shell: pwsh
-        run: ./scripts/package-release.ps1 -Tia ${{ matrix.tia }} -RequireOpenness -OutputDir "$env:RUNNER_TEMP\release"
+        run: ./scripts/package-release.ps1 -Tia ${{ matrix.tia }} -RequireOpenness -ReleaseVersion $env:RELEASE_VERSION -OutputDir "$env:RUNNER_TEMP\release"
       - name: TIA integration test (sandbox only)
         id: tia
         shell: pwsh
         env:
           KNOWN_GOOD: ${{ vars[format('TES_TIA_KNOWN_GOOD_PROJECT_{0}', matrix.tia)] }}
         run: |
-          $status = @{ tia = '${{ matrix.tia }}'; integration = 'not-run'; run_url = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID" }
+          . ./scripts/_common.ps1
+          $tia = '${{ matrix.tia }}'
+          $status = [ordered]@{ tia = $tia; integration = 'not-run'; run_url = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"; environment = $null }
           if ($env:KNOWN_GOOD) {
-            $version = (Get-Content Directory.Build.props -Raw) -replace '(?s).*<Version>([^<]+)</Version>.*', '$1'
-            $workers = Join-Path $env:RUNNER_TEMP "release\TIAStudio_${version}_TIA$('${{ matrix.tia }}'.Substring(1))_win-x64\workers"
+            $workers = Join-Path $env:RUNNER_TEMP "release\TIAStudio_$($env:RELEASE_VERSION)_TIA$($tia.Substring(1))_win-x64\workers"
             try {
-              ./scripts/test-tia-integration.ps1 -Version ${{ matrix.tia }} -KnownGoodProject $env:KNOWN_GOOD -WorkersDir $workers
+              ./scripts/test-tia-integration.ps1 -Version $tia -KnownGoodProject $env:KNOWN_GOOD -WorkersDir $workers
               $status.integration = 'passed'
             } catch {
               $status.integration = 'failed'
               Write-Error $_ -ErrorAction Continue
             }
+            # A teszt pontos környezete a kiadási manifestbe (szabályzat 4. pont)
+            $os = Get-CimInstance Win32_OperatingSystem
+            $dll = Get-OpennessDllPath $tia
+            $fileVersion = $null; $productVersion = $null
+            if ($dll) { $info = (Get-Item $dll).VersionInfo; $fileVersion = $info.FileVersion; $productVersion = $info.ProductVersion }
+            $status.environment = [ordered]@{
+              windows = "$($os.Caption) $($os.Version)"
+              opennessDll = $dll
+              opennessFileVersion = $fileVersion
+              opennessProductVersion = $productVersion
+              knownGoodProject = [System.IO.Path]::GetFileName($env:KNOWN_GOOD)
+              knownGoodProjectSha256 = (Get-FileHash -Algorithm SHA256 $env:KNOWN_GOOD).Hash.ToLowerInvariant()
+              testedCommit = (git rev-parse HEAD)
+              runner = $env:RUNNER_NAME
+            }
+          } elseif ($env:PRERELEASE -eq 'true') {
+            Write-Warning "TES_TIA_KNOWN_GOOD_PROJECT_$tia is not set: the $tia package is marked 'Untested development build'."
           } else {
-            Write-Warning 'TES_TIA_KNOWN_GOOD_PROJECT_${{ matrix.tia }} is not set: package status will be "Supported, integration test pending".'
+            throw "Stable release $env:TAG requires the $tia TIA integration test: set the TES_TIA_KNOWN_GOOD_PROJECT_$tia repository variable."
           }
           $results = Join-Path $env:RUNNER_TEMP 'release\tia-results-${{ matrix.tia }}'
           New-Item -ItemType Directory -Force $results | Out-Null

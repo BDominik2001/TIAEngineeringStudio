@@ -7,7 +7,9 @@ param(
     [string]$Configuration = 'Release',
     [string]$Dist = (Join-Path $PSScriptRoot '..\dist\TiaEngineeringStudio'),
     [string[]]$TiaVersions = @('V18', 'V19', 'V20'),
-    [switch]$RequireOpenness
+    [switch]$RequireOpenness,
+    # Kiadásnál a tag teljes verziója (pl. 0.2.0-beta.1); alapverziója a Directory.Build.props <Version>
+    [string]$ReleaseVersion
 )
 . "$PSScriptRoot\_common.ps1"
 
@@ -15,7 +17,8 @@ if (Test-Path $Dist) { throw "A kimeneti mappa már létezik: $Dist (automatikus
 
 & "$PSScriptRoot\build-rust.ps1" -SkipTests
 Write-Step 'Desktop'
-Invoke-Checked 'dotnet' @('build', (Join-Path $RepoRoot 'src\csharp\Desktop\TiaStudio.Desktop.csproj'), '-c', $Configuration, '-o', $Dist)
+$versionArgs = if ($ReleaseVersion) { @("-p:Version=$ReleaseVersion") } else { @() }
+Invoke-Checked 'dotnet' (@('build', (Join-Path $RepoRoot 'src\csharp\Desktop\TiaStudio.Desktop.csproj'), '-c', $Configuration, '-o', $Dist) + $versionArgs)
 Copy-Item (Join-Path $RepoRoot 'src\rust\validator\target\release\tes_validator.dll') $Dist
 
 Write-Step 'Python generátor'
@@ -31,15 +34,16 @@ $examplesTarget = Join-Path $Dist 'examples'
 New-Item -ItemType Directory -Force $examplesTarget | Out-Null
 Copy-Item (Join-Path $RepoRoot 'examples\*.json') $examplesTarget
 
-& "$PSScriptRoot\build-tia-workers.ps1" -Configuration $Configuration -Versions $TiaVersions -OutputRoot (Join-Path $Dist 'workers') -RequireOpenness:$RequireOpenness
+& "$PSScriptRoot\build-tia-workers.ps1" -Configuration $Configuration -Versions $TiaVersions -OutputRoot (Join-Path $Dist 'workers') -RequireOpenness:$RequireOpenness -ReleaseVersion $ReleaseVersion
 
 Write-Step 'Buildazonosító (build-info.json, docs/VERSIONING.md)'
 $buildInfo = Join-Path $RepoRoot 'scripts\tools\build_info.py'
-Invoke-Checked 'python' @($buildInfo, '--output', (Join-Path $Dist 'build-info.json'))
+$releaseArgs = if ($ReleaseVersion) { @('--release-version', $ReleaseVersion) } else { @() }
+Invoke-Checked 'python' (@($buildInfo, '--output', (Join-Path $Dist 'build-info.json')) + $releaseArgs)
 foreach ($tia in @('V18', 'V19', 'V20')) {
     $workerDir = Join-Path $Dist "workers\$tia"
     if (Test-Path $workerDir) {
-        Invoke-Checked 'python' @($buildInfo, '--tia', $tia, '--output', (Join-Path $workerDir 'build-info.json'))
+        Invoke-Checked 'python' (@($buildInfo, '--tia', $tia, '--output', (Join-Path $workerDir 'build-info.json')) + $releaseArgs)
     }
 }
 

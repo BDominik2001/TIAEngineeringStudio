@@ -23,6 +23,7 @@ Kiadott verzió még nincs. Az első tag (`v0.1.0`) csak akkor készül, ha a
 
 ### Módosítva
 
+- Repó: importálható GitHub rulesetek a `main` ágra és a `v*` tagekre (`.github/rulesets`).
 - Felület: magyar hibaüzenetek és teendők a közös hibakatalógusból (`contracts/error-codes.json`
   `message_hu`/`hint_hu`, katalógus 1.3); a validációs hibalista és az állapotsor is magyar.
 - Felület: a Napló táblázatos (idő, esemény, állapot, TIA, hibakód, üzenet; a nyers JSON buboréksúgóban).
@@ -36,6 +37,10 @@ Kiadott verzió még nincs. Az első tag (`v0.1.0`) csak akkor készül, ha a
 
 ### Javítva
 
+- Kiadás: az előzetes-kiadás tagek (`v0.2.0-beta.1`) eddig elbuktak a verzióellenőrzésen; a tag alapverziója
+  egyezik a `Directory.Build.props`-szal, a csomag és a build a teljes tag-verziót viseli.
+- Kiadás: stabil kiadáshoz mindhárom TIA-verzió integrációs tesztje kötelező (eddig kihagyható volt);
+  előzetes kiadás nem tesztelt csomagja „Untested development build”; a tesztkörnyezet a manifestbe kerül.
 - Maximalizált ablaknál a fejléc teteje nagyobb DPI-skálázáson (pl. 150%) lelógott a képernyőről;
   az ablak most pontosan a monitor munkaterületét kapja.
 

@@ -26,6 +26,9 @@ kódbázis és a `src/tia-adapters/v18|v19|v20` adapterek a megoldás ([ARCHITEC
 Az AI-asszisztens munkamenetei (`claude/<azonosító>` ágak) ugyanígy rövid életűek, és PR-on át kerülnek
 a `main`-be.
 
+A `ui-screenshots` ág **technikai publikációs ág**: a CI minden pushnál felülírja a felület képernyőképeivel.
+Nem fejlesztési ág, nem kerül PR-ba, és a `main` ruleset nem vonatkozik rá.
+
 ## Munkafolyamat
 
 1. Frissítsd a `main` ágat.
@@ -89,7 +92,12 @@ A Projects tábla oszlopai: Backlog, Ready, In progress, Review, Done.
 
 ## Main védelme
 
-GitHub Settings → Rules → Rulesets (a `main`-re):
+A Gitben leírt szabály önmagában nem akadályozza meg a közvetlen pusht: a védelmet a GitHubon kell
+aktiválni. Az importálható szabálykészletek a [`.github/rulesets`](../.github/rulesets/README.md)
+mappában vannak (Settings → Rules → Rulesets → New ruleset → Import a ruleset):
+`main.json`, `release-tags-immutable.json`, `release-tags-creation.json`.
+
+A rulesetek tartalma (a `main`-re):
 
 - csak Pull Requesttel lehet változást a `main`-be tenni;
 - kötelező státuszellenőrzések: `ci / lint, format, schema, determinism, security`, `ci / linux`, `ci / windows`;

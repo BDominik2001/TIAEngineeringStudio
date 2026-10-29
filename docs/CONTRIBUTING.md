@@ -23,6 +23,19 @@ a WPF projekt kivételével minden fordítható és tesztelhető. Gyors indulás
    Windows: `.\scripts\test-offline.ps1` (a WPF Desktopot is fordítja).
 5. Pull Request a `main`-re, a PR-sablon minden pontjával. CI zöld, beszélgetések lezárva, review után squash merge.
 
+## Függőségfrissítések (Dependabot)
+
+A Dependabot hetente nyit PR-t (NuGet, Cargo, GitHub Actions). Ezeket egyenként, a CI zöldje után kell
+beolvasztani, nem vakon:
+
+- főverzió-váltásnál (pl. System.Text.Json 8 → 10) a `windows` job net48 Desktop buildje, a netstandard2.0
+  könyvtárak és a C# tesztek is legyenek zöldek, és nézd át a csomag kiadási jegyzetét (törő változások,
+  új tranzitív függőségek, binding redirectek);
+- a régebbi alapra épülő Dependabot PR-t a `@dependabot rebase` megjegyzéssel kell frissíteni, ha a `main`
+  CI-je időközben változott;
+- Dependabot-változás soha nem fut a licencelt self-hosted TIA-runneren: a `tia-integration` és a `release`
+  workflow nem indul Pull Requestre.
+
 ## Szabályok a kódhoz
 
 - A közös logika (`src/csharp/Core`, `Application`, `Ipc`, `Infrastructure`, `Desktop`) **nem hivatkozhat**

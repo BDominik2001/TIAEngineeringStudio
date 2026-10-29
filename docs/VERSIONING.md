@@ -16,6 +16,12 @@ Formátum: `MAJOR.MINOR.PATCH`, előzetes kiadásnál `-alpha.N`, `-beta.N`, `-r
 
 A `0.x` kiadások fejlesztési státuszúak, a kompatibilitás még változhat.
 
+Előzetes kiadás: a `Directory.Build.props` `<Version>` mindig az alapverzió (pl. `0.4.0`); az
+előzetes-kiadás jelölést (`-alpha.N`, `-beta.N`, `-rc.N`) csak a Git-tag hordozza (`v0.4.0-beta.1`). A kiadási
+build ezt a teljes verziót adja át (`-p:Version=0.4.0-beta.1`, `build_info.py --release-version`), így az
+assembly fájlverziója `0.4.0.0`, az InformationalVersion `0.4.0-beta.1+<sha>`, a `build-info.json`
+`releaseVersion` mezője `0.4.0-beta.1`. Részletek: [RELEASE_PROCESS.md](RELEASE_PROCESS.md).
+
 Egyetlen forrás: `Directory.Build.props` `<Version>`. Ugyanezt az értéket kell hordoznia a Python-generátornak
 (`src/python/generator/__init__.py` `__version__`) és a Rust-validátornak (`src/rust/validator/Cargo.toml`);
 ezt a `python scripts/tools/build_info.py --check` ellenőrzi a CI-ban. A .NET SDK a git-commitot az
