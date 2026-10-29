@@ -124,6 +124,7 @@ namespace TiaStudio.UnitTests
             {
                 ProtocolJson.WriteAtomic(System.IO.Path.Combine(directory, SandboxMarker.FileName), new SandboxMarker
                 {
+                    SandboxId = Guid.NewGuid().ToString(),
                     TiaVersion = tiaVersion,
                     ProjectFile = System.IO.Path.GetFileName(project),
                     SourceProjectPath = "C:/known-good/Demo" + TiaVersions.ProjectExtension(tiaVersion),

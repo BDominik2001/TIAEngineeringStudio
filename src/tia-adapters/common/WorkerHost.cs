@@ -289,11 +289,11 @@ namespace TiaStudio.TiaAdapter.Common
             // 5. Jóváhagyás (csak a valódi, módosító importhoz)
             if (isImport && !command.DryRun)
             {
-                string expected = ApprovalDigest.Compute(command, package.ManifestSha256, manifest.Files);
+                string expected = ApprovalDigest.Compute(command, package.ManifestSha256, manifest.Files, SandboxRules.ReadMarker(command.ProjectPath).SandboxId);
                 if (!command.ApprovedByUser || command.Approval == null || !string.Equals(command.Approval.ApprovalDigest, expected, StringComparison.Ordinal))
                 {
                     Finish(result, TiaJobStatus.Blocked, ErrorCodes.ApprovalInvalid,
-                        "Import requires a user approval bound to this job, project path, PLC, manifest and every source hash", SandboxStates.NotTouched);
+                        "Import requires a user approval bound to this job, project path, sandbox copy, PLC, manifest and every source hash", SandboxStates.NotTouched);
                     return;
                 }
             }
@@ -312,7 +312,7 @@ namespace TiaStudio.TiaAdapter.Common
             try
             {
                 result.SandboxState = SandboxStates.Unchanged;
-                ImportWithSession(command, result, session, files);
+                ImportWithSession(command, result, session, manifest, files);
             }
             finally
             {
@@ -327,7 +327,7 @@ namespace TiaStudio.TiaAdapter.Common
             }
         }
 
-        private void ImportWithSession(TiaCommand command, TiaResult result, IOpennessSession session, List<ManifestFile> files)
+        private void ImportWithSession(TiaCommand command, TiaResult result, IOpennessSession session, GenerationManifest manifest, List<ManifestFile> files)
         {
             IPlcTarget plc = session.FindPlc(command.PlcName);
             if (plc == null)
@@ -335,9 +335,16 @@ namespace TiaStudio.TiaAdapter.Common
                 Finish(result, TiaJobStatus.Blocked, ErrorCodes.PlcNotFound, "PLC '" + command.PlcName + "' not found in the project", SandboxStates.Unchanged);
                 return;
             }
-            if (!plc.IsOffline())
+            Tuple<string, string> onlineProblem = OnlineStateProblem(plc, "import and compile are");
+            if (onlineProblem != null)
             {
-                Finish(result, TiaJobStatus.Blocked, ErrorCodes.PlcOnline, "PLC '" + plc.Name + "' is online; import and compile are offline-only", SandboxStates.Unchanged);
+                Finish(result, TiaJobStatus.Blocked, onlineProblem.Item1, onlineProblem.Item2, SandboxStates.Unchanged);
+                return;
+            }
+            Tuple<string, string> cpuProblem = CpuFamilyProblem(plc, manifest.CpuFamily, result);
+            if (cpuProblem != null)
+            {
+                Finish(result, TiaJobStatus.Blocked, cpuProblem.Item1, cpuProblem.Item2, SandboxStates.Unchanged);
                 return;
             }
 
@@ -535,10 +542,11 @@ namespace TiaStudio.TiaAdapter.Common
                     Finish(result, TiaJobStatus.Blocked, ErrorCodes.PlcNotFound, "PLC '" + command.PlcName + "' not found in the project", SandboxStates.Unchanged);
                     return;
                 }
-                if (export && !plc.IsOffline())
+                // V18 kézikönyv 5.11.3.18 / 6.4.1.13: forrásgenerálás és export csak offline PLC-vel.
+                Tuple<string, string> onlineProblem = export ? OnlineStateProblem(plc, "export is") : null;
+                if (onlineProblem != null)
                 {
-                    // V18 kézikönyv 5.11.3.18 / 6.4.1.13: forrásgenerálás és export csak offline PLC-vel.
-                    Finish(result, TiaJobStatus.Blocked, ErrorCodes.PlcOnline, "PLC '" + plc.Name + "' is online; export is offline-only", SandboxStates.Unchanged);
+                    Finish(result, TiaJobStatus.Blocked, onlineProblem.Item1, onlineProblem.Item2, SandboxStates.Unchanged);
                     return;
                 }
                 List<ProjectBlockInfo> blocks = plc.DescribeBlocks().ToList();
@@ -667,6 +675,43 @@ namespace TiaStudio.TiaAdapter.Common
             }
             result.Blocks = selected.Select(p => p.Item2).ToList();
             Finish(result, TiaJobStatus.Success, null, "Exported " + selected.Count + " block(s); project not modified", SandboxStates.Unchanged);
+        }
+
+        /// <summary>Csak a kifejezett Offline állapot engedélyez (fail-closed); null = rendben.</summary>
+        private static Tuple<string, string> OnlineStateProblem(IPlcTarget plc, string operation)
+        {
+            switch (plc.GetOnlineState())
+            {
+                case PlcOnlineState.Offline:
+                    return null;
+                case PlcOnlineState.Online:
+                    return Tuple.Create(ErrorCodes.PlcOnline, "PLC '" + plc.Name + "' is online; " + operation + " offline-only");
+                default:
+                    return Tuple.Create(ErrorCodes.PlcOnlineStateUnknown,
+                        "The online state of PLC '" + plc.Name + "' cannot be determined; " + operation + " only allowed for a PLC that is explicitly offline");
+            }
+        }
+
+        /// <summary>
+        /// A manifest cpu_family-je és a projektben talált CPU egyezése. Könyvtárimport-csomagnál
+        /// (cpu_family = null) nincs elvárt család; a felismert családot ekkor csak naplózzuk.
+        /// </summary>
+        private static Tuple<string, string> CpuFamilyProblem(IPlcTarget plc, string expected, TiaResult result)
+        {
+            string typeIdentifier = plc.CpuTypeIdentifier;
+            string actual = PlcHardware.CpuFamilyOf(typeIdentifier);
+            if (expected == null || actual == expected)
+            {
+                result.Messages.Add(new TiaMessage(MessageSeverity.Info, null, "PLC '" + plc.Name + "': " + (actual ?? "unknown CPU family") + " (" + (typeIdentifier ?? "no type identifier") + ")"));
+                return null;
+            }
+            if (actual == null)
+            {
+                return Tuple.Create(ErrorCodes.CpuFamilyMismatch,
+                    "The CPU family of PLC '" + plc.Name + "' cannot be determined from its type identifier '" + (typeIdentifier ?? "-") + "'; the sources were generated for " + expected);
+            }
+            return Tuple.Create(ErrorCodes.CpuFamilyMismatch,
+                "PLC '" + plc.Name + "' is an " + actual + " CPU (" + typeIdentifier + ") but the sources were generated for " + expected);
         }
 
         /// <summary>Ha a TIA Portal leállt, semmit nem állíthatunk a sandboxról.</summary>

@@ -88,6 +88,8 @@ namespace TiaStudio.UnitTests
             };
         }
 
+        private const string SandboxId = "0f8fad5b-d9cb-469f-a165-70867728950e";
+
         private static readonly ManifestFile[] Files =
         {
             new ManifestFile { RelativePath = "sources/FB_Cylinder.scl", Sha256 = new string('1', 64), ImportOrder = 1 },
@@ -97,8 +99,8 @@ namespace TiaStudio.UnitTests
         [Fact]
         public void DigestIsStableAndBindsEveryField()
         {
-            string baseline = ApprovalDigest.Compute(Command(), new string('m', 64), Files);
-            Assert.Equal(baseline, ApprovalDigest.Compute(Command(), new string('m', 64), Enumerable.Reverse(Files)));
+            string baseline = ApprovalDigest.Compute(Command(), new string('m', 64), Files, SandboxId);
+            Assert.Equal(baseline, ApprovalDigest.Compute(Command(), new string('m', 64), Enumerable.Reverse(Files), SandboxId));
 
             Func<TiaCommand, TiaCommand>[] mutations =
             {
@@ -110,12 +112,14 @@ namespace TiaStudio.UnitTests
             };
             foreach (Func<TiaCommand, TiaCommand> mutate in mutations)
             {
-                Assert.NotEqual(baseline, ApprovalDigest.Compute(mutate(Command()), new string('m', 64), Files));
+                Assert.NotEqual(baseline, ApprovalDigest.Compute(mutate(Command()), new string('m', 64), Files, SandboxId));
             }
-            Assert.NotEqual(baseline, ApprovalDigest.Compute(Command(), new string('n', 64), Files));
+            Assert.NotEqual(baseline, ApprovalDigest.Compute(Command(), new string('n', 64), Files, SandboxId));
             ManifestFile[] changed = Files.Select(f => new ManifestFile { RelativePath = f.RelativePath, Sha256 = f.Sha256, ImportOrder = f.ImportOrder }).ToArray();
             changed[1].Sha256 = new string('3', 64);
-            Assert.NotEqual(baseline, ApprovalDigest.Compute(Command(), new string('m', 64), changed));
+            Assert.NotEqual(baseline, ApprovalDigest.Compute(Command(), new string('m', 64), changed, SandboxId));
+            // Audit A-05: ugyanazon útvonalon újra létrehozott sandbox-másolat új jóváhagyást igényel.
+            Assert.NotEqual(baseline, ApprovalDigest.Compute(Command(), new string('m', 64), Files, Guid.NewGuid().ToString()));
         }
 
         [Fact]
@@ -123,7 +127,7 @@ namespace TiaStudio.UnitTests
         {
             TiaCommand command = Command();
             command.PlcName = "PLC_1\nfile=evil";
-            Assert.Throws<ArgumentException>(() => ApprovalDigest.Compute(command, new string('m', 64), Files));
+            Assert.Throws<ArgumentException>(() => ApprovalDigest.Compute(command, new string('m', 64), Files, SandboxId));
         }
     }
 
@@ -178,6 +182,51 @@ namespace TiaStudio.UnitTests
                 Assert.Equal(ErrorCodes.ProjectNotFound, SandboxRules.Check(temp.Combine("V18", "X", "X.ap18"), "V18", temp.Path).Item1);
             }
         }
+
+        [Theory]
+        [InlineData("1.0", "0f8fad5b-d9cb-469f-a165-70867728950e")]
+        [InlineData("1.1", null)]
+        [InlineData("1.1", "not-a-guid")]
+        [InlineData("1.1", "0F8FAD5B-D9CB-469F-A165-70867728950E")]
+        public void MarkerWithoutValidSandboxIdIsNotSandbox(string markerVersion, string sandboxId)
+        {
+            using (TempDir temp = new TempDir())
+            {
+                string project = Fixtures.WriteSandboxProject(temp.Path, "V18", withMarker: false);
+                ProtocolJson.WriteAtomic(Path.Combine(Path.GetDirectoryName(project), SandboxMarker.FileName),
+                    new SandboxMarker { MarkerVersion = markerVersion, SandboxId = sandboxId, TiaVersion = "V18", ProjectFile = Path.GetFileName(project) });
+                Assert.Equal(ErrorCodes.ProjectNotSandbox, SandboxRules.Check(project, "V18", temp.Path).Item1);
+            }
+        }
+
+#if NET8_0_OR_GREATER
+        [Fact]
+        public void LinksInTheSandboxPathOrProjectFolderAreRejected()
+        {
+            // Audit A-06: symlinkkel ugyanez Windows alatt junctionnel/symlinkkel; a teszt csak Linuxon hoz létre linket.
+            if (!OperatingSystem.IsLinux())
+            {
+                return;
+            }
+            using (TempDir temp = new TempDir())
+            using (TempDir outside = new TempDir())
+            {
+                string project = Fixtures.WriteSandboxProject(outside.Path, "V18");
+                string linkedDirectory = temp.Combine("V18", "Linked");
+                Directory.CreateDirectory(temp.Combine("V18"));
+                Directory.CreateSymbolicLink(linkedDirectory, Path.GetDirectoryName(project));
+                Tuple<string, string> problem = SandboxRules.Check(Path.Combine(linkedDirectory, Path.GetFileName(project)), "V18", temp.Path);
+                Assert.Equal(ErrorCodes.ProjectNotSandbox, problem.Item1);
+                Assert.Contains("link", problem.Item2);
+
+                string inside = Fixtures.WriteSandboxProject(temp.Combine("inside"), "V18");
+                Assert.Null(SandboxRules.Check(inside, "V18", temp.Path));
+                Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(inside), "IM"));
+                File.CreateSymbolicLink(Path.Combine(Path.GetDirectoryName(inside), "IM", "data.plf"), project);
+                Assert.Equal(ErrorCodes.ProjectNotSandbox, SandboxRules.Check(inside, "V18", temp.Path)?.Item1);
+            }
+        }
+#endif
 
         [Theory]
         [InlineData("x.ap18", "V18")]

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using TiaStudio.Application.Ports;
 using TiaStudio.Contracts;
+using TiaStudio.Contracts.Integrity;
 using TiaStudio.Infrastructure.Generator;
 using TiaStudio.Infrastructure.Logging;
 using TiaStudio.Infrastructure.Processes;
@@ -53,6 +54,9 @@ namespace TiaStudio.UnitTests
 
         public HashSet<string> OtherFiles { get; } = new HashSet<string>();
 
+        /// <summary>TIA nélkül fordított workerek (a link-jelölő openness_linked = false vagy hiányzik).</summary>
+        public HashSet<string> UnlinkedWorkers { get; } = new HashSet<string>();
+
         public bool FileExists(string path)
         {
             return Files.ContainsKey(path) || OtherFiles.Contains(path);
@@ -61,6 +65,11 @@ namespace TiaStudio.UnitTests
         public Tuple<Version, string> Inspect(string path)
         {
             return Files[path];
+        }
+
+        public bool IsOpennessLinkedWorker(string workerPath)
+        {
+            return !UnlinkedWorkers.Contains(workerPath);
         }
     }
 
@@ -151,6 +160,41 @@ namespace TiaStudio.UnitTests
             TiaInstallInfo mismatch = Discovery(registry, assemblies).DiscoverInstalledVersions()[0];
             Assert.Equal(InstallStatus.Unavailable, mismatch.Status);
             Assert.Equal(ErrorCodes.ApiDllMismatch, mismatch.ErrorCode);
+        }
+
+        [Fact]
+        public void UnlinkedWorkerIsUnavailableEvenWithTiaInstalled()
+        {
+            // Audit A-04: a TIA nélkül épített worker .exe.config-írással sem válik Openness-workerré.
+            FakeRegistry registry = new FakeRegistry();
+            FakeAssemblies assemblies = new FakeAssemblies();
+            registry.AddInstallation("18.0", "18.0.0.0", "dll18");
+            assemblies.Files["dll18"] = Tuple.Create(new Version(18, 0, 0, 0), Token);
+            assemblies.UnlinkedWorkers.Add("workers/V18.exe");
+            TiaInstallInfo info = Discovery(registry, assemblies, "V18").DiscoverInstalledVersions()[0];
+            Assert.Equal(InstallStatus.Unavailable, info.Status);
+            Assert.Equal(ErrorCodes.WorkerBuiltWithoutOpenness, info.ErrorCode);
+            Assert.Contains(info.Notes, n => n.Contains("-RequireOpenness"));
+        }
+
+        [Theory]
+        [InlineData("{ \"tia_version\": \"V18\", \"openness_linked\": true }", true)]
+        [InlineData("\uFEFF{ \"tia_version\": \"V18\", \"openness_linked\": true }", true)]
+        [InlineData("{ \"tia_version\": \"V18\", \"openness_linked\": false }", false)]
+        [InlineData("{ \"openness_linked\": \"true\" }", false)]
+        [InlineData("not json", false)]
+        [InlineData(null, false)]
+        public void LinkMarkerNextToTheWorkerIsReadFailClosed(string marker, bool linked)
+        {
+            using (TempDir temp = new TempDir())
+            {
+                string worker = temp.Combine("TiaStudio.TiaAdapter.V18.exe");
+                if (marker != null)
+                {
+                    File.WriteAllText(temp.Combine("TiaStudio.TiaAdapter.V18.openness.json"), marker);
+                }
+                Assert.Equal(linked, new FileAssemblyInspector().IsOpennessLinkedWorker(worker));
+            }
         }
 
         [Fact]
@@ -253,7 +297,53 @@ namespace TiaStudio.UnitTests
                 Assert.Equal(ErrorCodes.ProjectVersionMismatch, service.Verify(copy.ProjectPath, "V20").Item1);
                 Assert.Equal("project", File.ReadAllText(Path.Combine(source, "Demo.ap19")));
                 Assert.False(File.Exists(Path.Combine(source, SandboxMarker.FileName)));
+                Assert.True(Guid.TryParseExact(copy.Marker.SandboxId, "D", out Guid _));
+                Assert.Equal(copy.Marker.SandboxId, SandboxRules.ReadMarker(copy.ProjectPath).SandboxId);
             }
+        }
+
+#if NET8_0_OR_GREATER
+        [Fact]
+        public void SandboxCopyRejectsLinkedFiles()
+        {
+            // Audit A-06: linkelt fájlt tartalmazó ismert jó projektből nem készül sandbox.
+            if (!OperatingSystem.IsLinux())
+            {
+                return;
+            }
+            using (TempDir temp = new TempDir())
+            {
+                string source = temp.Combine("known-good", "Demo");
+                Directory.CreateDirectory(source);
+                File.WriteAllText(Path.Combine(source, "Demo.ap18"), "project");
+                File.WriteAllText(temp.Combine("elsewhere.bin"), "data");
+                File.CreateSymbolicLink(Path.Combine(source, "data.bin"), temp.Combine("elsewhere.bin"));
+                SandboxService service = new SandboxService(temp.Combine("sandbox"), new FixedClock(), new TestUser());
+                Assert.Equal(ErrorCodes.PathEscape, Assert.Throws<SandboxException>(() => service.CreateSandboxCopy(Path.Combine(source, "Demo.ap18"), "V18")).ErrorCode);
+            }
+        }
+#endif
+
+        [Fact]
+        public void WriteAtomicReplacesWithoutLeavingTemporaryFiles()
+        {
+            // Audit A-08: a célfájl csere közben sem hiányzik; sikertelen írásnál az eredeti marad.
+            using (TempDir temp = new TempDir())
+            {
+                string path = temp.Combine("library.json");
+                ProtocolJson.WriteAtomic(path, new SandboxMarker { TiaVersion = "V18" });
+                ProtocolJson.WriteAtomic(path, new SandboxMarker { TiaVersion = "V19" });
+                Assert.Equal("V19", ProtocolJson.DeserializeLenient<SandboxMarker>(ProtocolJson.ReadAllText(path)).TiaVersion);
+                Assert.Equal(new[] { "library.json" }, Directory.GetFiles(temp.Path).Select(Path.GetFileName).ToArray());
+
+                Assert.ThrowsAny<Exception>(() => ProtocolJson.WriteAtomic(path, new SelfReferencing()));
+                Assert.Equal("V19", ProtocolJson.DeserializeLenient<SandboxMarker>(ProtocolJson.ReadAllText(path)).TiaVersion);
+            }
+        }
+
+        private sealed class SelfReferencing
+        {
+            public SelfReferencing Self => this;
         }
 
         [Fact]
@@ -279,6 +369,67 @@ namespace TiaStudio.UnitTests
             TiaResult result = await client.ImportAndCompileAsync(new TiaJobRequest(command, TimeSpan.FromSeconds(1)), System.Threading.CancellationToken.None);
             Assert.Equal(ErrorCodes.TiaNotInstalled, result.ErrorCode);
             Assert.Equal(SandboxStates.NotTouched, result.SandboxState);
+        }
+    }
+}
+
+namespace TiaStudio.UnitTests
+{
+    public class ProcessTreeTests
+    {
+        /// <summary>
+        /// Audit A-07: időtúllépésnél a worker által indított gyerekfolyamat (a TIA Portal helyett itt egy
+        /// ping.exe) is leáll. Windows Job Object nélkül (más OS) a futtató csak a fő folyamatot állítja le.
+        /// </summary>
+        [Fact]
+        public async System.Threading.Tasks.Task TimeoutTerminatesTheWholeProcessTreeOnWindows()
+        {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            {
+                return;
+            }
+            using (TempDir temp = new TempDir())
+            {
+                string pidFile = temp.Combine("child.pid");
+                string script = "$c = [System.Diagnostics.Process]::Start('ping.exe', '-n 300 127.0.0.1'); Set-Content -LiteralPath '" + pidFile
+                    + "' -Value $c.Id; Start-Sleep -Seconds 300";
+                ProcessRunResult run = await ProcessRunner.RunAsync(
+                    "powershell.exe", new[] { "-NoProfile", "-NonInteractive", "-Command", script }, temp.Path, null, TimeSpan.FromSeconds(20), System.Threading.CancellationToken.None);
+                Assert.True(run.TimedOut);
+                Assert.True(File.Exists(pidFile), "the child process did not start in time");
+                Assert.Equal(0, run.RemainingProcesses);
+                Assert.Contains("process tree", run.ProcessTreeNote);
+                int pid = int.Parse(File.ReadAllText(pidFile).Trim(), System.Globalization.CultureInfo.InvariantCulture);
+                Assert.Throws<ArgumentException>(() => System.Diagnostics.Process.GetProcessById(pid));
+            }
+        }
+    }
+}
+
+namespace TiaStudio.UnitTests
+{
+    public class SourcePreviewTests
+    {
+        /// <summary>Audit A-12: hibás vagy eltérő tartalom nem jelenik meg forrásként és nem számít átnézettnek.</summary>
+        [Fact]
+        public void OnlyReadableContentMatchingTheManifestIsShown()
+        {
+            using (TempDir temp = new TempDir())
+            {
+                string path = temp.Combine("FB_Cylinder.scl");
+                File.WriteAllText(path, "FUNCTION_BLOCK \"FB_Cylinder\"\r\n");
+                string hash = TiaStudio.Contracts.Integrity.Sha256.OfFile(path);
+
+                Assert.Equal("FUNCTION_BLOCK \"FB_Cylinder\"\r\n", SourcePreview.Read(path, hash, out string error));
+                Assert.Null(error);
+
+                File.AppendAllText(path, "// edit\r\n");
+                Assert.Null(SourcePreview.Read(path, hash, out error));
+                Assert.Contains("SHA-256", error);
+
+                Assert.Null(SourcePreview.Read(temp.Combine("missing.scl"), hash, out error));
+                Assert.Contains("nem olvasható", error);
+            }
         }
     }
 }

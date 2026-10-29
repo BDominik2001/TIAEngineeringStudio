@@ -7,24 +7,26 @@ using System.Text;
 namespace TiaStudio.Contracts.Integrity
 {
     /// <summary>
-    /// ApprovalDigest v1: a jóváhagyást a konkrét futtatási kérelemhez, projektútvonalhoz és
-    /// az összes forrás hash-éhez köti (spec 6.3). Az approved_by_user mező önmagában nem
-    /// jogosultság; a worker ezt a kivonatot újraszámolja a saját maga által mért hashekből.
+    /// ApprovalDigest v2: a jóváhagyást a konkrét futtatási kérelemhez, projektútvonalhoz, a sandbox-másolat
+    /// azonosítójához (.tes-sandbox.json sandbox_id) és az összes forrás hash-éhez köti (spec 6.3). Ha a
+    /// jóváhagyás után ugyanarra az útvonalra új sandbox-másolat kerül, a jóváhagyás érvénytelen (audit A-05).
+    /// Az approved_by_user mező önmagában nem jogosultság; a worker ezt a kivonatot újraszámolja a saját
+    /// maga által mért hashekből és a saját maga által olvasott markerből.
     /// </summary>
     public static class ApprovalDigest
     {
-        public const string Version = "tes-approval-v1";
+        public const string Version = "tes-approval-v2";
 
-        public static string Compute(TiaCommand command, string manifestSha256, IEnumerable<ManifestFile> files)
+        public static string Compute(TiaCommand command, string manifestSha256, IEnumerable<ManifestFile> files, string sandboxId)
         {
             if (command == null)
             {
                 throw new ArgumentNullException(nameof(command));
             }
-            return Sha256.OfText(CanonicalText(command, manifestSha256, files));
+            return Sha256.OfText(CanonicalText(command, manifestSha256, files, sandboxId));
         }
 
-        public static string CanonicalText(TiaCommand command, string manifestSha256, IEnumerable<ManifestFile> files)
+        public static string CanonicalText(TiaCommand command, string manifestSha256, IEnumerable<ManifestFile> files, string sandboxId)
         {
             StringBuilder text = new StringBuilder();
             text.Append(Version).Append('\n');
@@ -32,6 +34,7 @@ namespace TiaStudio.Contracts.Integrity
             Line(text, "operation", command.Operation);
             Line(text, "tia_version", command.TiaVersion);
             Line(text, "project_path", NormalizePath(command.ProjectPath));
+            Line(text, "sandbox_id", sandboxId);
             Line(text, "plc_name", command.PlcName);
             Line(text, "overwrite_policy", command.OverwritePolicy);
             Line(text, "manifest_sha256", manifestSha256);

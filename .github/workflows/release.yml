@@ -93,6 +93,7 @@ jobs:
         shell: pwsh
         env:
           KNOWN_GOOD: ${{ vars[format('TES_TIA_KNOWN_GOOD_PROJECT_{0}', matrix.tia)] }}
+          CPU_FAMILY: ${{ vars[format('TES_TIA_CPU_FAMILY_{0}', matrix.tia)] }}
         run: |
           . ./scripts/_common.ps1
           $tia = '${{ matrix.tia }}'
@@ -100,7 +101,7 @@ jobs:
           if ($env:KNOWN_GOOD) {
             $workers = Join-Path $env:RUNNER_TEMP "release\TIAStudio_$($env:RELEASE_VERSION)_TIA$($tia.Substring(1))_win-x64\workers"
             try {
-              ./scripts/test-tia-integration.ps1 -Version $tia -KnownGoodProject $env:KNOWN_GOOD -WorkersDir $workers
+              ./scripts/test-tia-integration.ps1 -Version $tia -KnownGoodProject $env:KNOWN_GOOD -CpuFamily "$env:CPU_FAMILY" -WorkersDir $workers
               $status.integration = 'passed'
             } catch {
               $status.integration = 'failed'
@@ -118,6 +119,7 @@ jobs:
               opennessProductVersion = $productVersion
               knownGoodProject = [System.IO.Path]::GetFileName($env:KNOWN_GOOD)
               knownGoodProjectSha256 = (Get-FileHash -Algorithm SHA256 $env:KNOWN_GOOD).Hash.ToLowerInvariant()
+              knownGoodCpuFamily = $(if ($env:CPU_FAMILY) { $env:CPU_FAMILY } else { 'examples default' })
               testedCommit = (git rev-parse HEAD)
               runner = $env:RUNNER_NAME
             }

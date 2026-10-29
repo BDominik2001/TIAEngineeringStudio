@@ -491,7 +491,21 @@
                                     </HeaderedContentControl>
                                 </DockPanel>
                                 <HeaderedContentControl Grid.Column="2" Style="{StaticResource Card}" Header="Forráskód (csak olvasható)" Margin="0">
-                                    <TextBox Style="{StaticResource CodeView}" Text="{Binding PreviewText, Mode=OneWay}" />
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Top" Text="{Binding PreviewError}" TextWrapping="Wrap" Margin="0,0,0,8"
+                                                   Foreground="{StaticResource Brush.Danger}" FontWeight="SemiBold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding PreviewError}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBox Style="{StaticResource CodeView}" Text="{Binding PreviewText, Mode=OneWay}" />
+                                    </DockPanel>
                                 </HeaderedContentControl>
                             </Grid>
                         </DockPanel>

@@ -1,6 +1,6 @@
 {
   "$comment": "Közös hibatipológia (spec 10.1/15). A C#, Python és Rust komponensek kizárólag az itt felsorolt kódokat adhatják vissza. Új kód felvétele = contracts verziónövelés. A hint_hu (opcionális) a felületen mutatott teendő.",
-  "error_codes_version": "1.3",
+  "error_codes_version": "1.4",
   "codes": {
     "INVALID_JSON": { "category": "input", "message_hu": "A bemenet nem érvényes UTF-8 JSON." },
     "INPUT_TOO_LARGE": { "category": "input", "message_hu": "A bemenet mérete meghaladja a megengedett korlátot." },
@@ -43,7 +43,7 @@
 
     "TIA_NOT_INSTALLED": { "category": "environment", "message_hu": "A kért TIA Portal / Openness verzió nincs telepítve.", "hint_hu": "Telepítsd a célverziójú TIA Portalt és az Openness-t, vagy válassz másik célverziót." },
     "API_DLL_MISMATCH": { "category": "environment", "message_hu": "A betöltött Siemens.Engineering.dll verziója vagy helye nem egyezik a várttal." },
-    "WORKER_BUILT_WITHOUT_OPENNESS": { "category": "environment", "message_hu": "A worker Openness-referencia nélkül készült; TIA-művelet nem futtatható.", "hint_hu": "Ez a csomag TIA nélkül készült. TIA-művelethez a TIA-s gépen futtasd a scripts\\build-desktop.ps1-et vagy a configure-workers.ps1-et." },
+    "WORKER_BUILT_WITHOUT_OPENNESS": { "category": "environment", "message_hu": "A worker Openness-referencia nélkül készült; TIA-művelet nem futtatható.", "hint_hu": "Ez a worker TIA nélkül készült, config-átírással sem lesz használható. A TIA-s gépen fordítsd újra: scripts\\build-tia-workers.ps1 -RequireOpenness (vagy scripts\\build-desktop.ps1 -RequireOpenness)." },
     "OPENNESS_ACCESS_DENIED": { "category": "environment", "message_hu": "A felhasználó nem tagja a 'Siemens TIA Openness' csoportnak, vagy a hozzáférést elutasították.", "hint_hu": "Add hozzá a felhasználót a 'Siemens TIA Openness' helyi csoporthoz, majd jelentkezz be újra." },
     "LICENSE_MISSING": { "category": "environment", "message_hu": "Hiányzó vagy lejárt TIA/Openness licenc." },
     "UMAC_PERMISSION_DENIED": { "category": "environment", "message_hu": "UMAC: hiányzik a 'Modify project via Openness API' jog." },
@@ -55,6 +55,8 @@
     "PROJECT_UPGRADE_REQUIRED": { "category": "project", "message_hu": "A projekt frissítést igényelne; ez csak külön UpgradeProject műveletben megengedett." },
     "PLC_NOT_FOUND": { "category": "project", "message_hu": "A megadott nevű PLC-szoftver nem található a projektben." },
     "PLC_ONLINE": { "category": "project", "message_hu": "A PLC online állapotban van; import és fordítás csak offline megengedett." },
+    "PLC_ONLINE_STATE_UNKNOWN": { "category": "project", "message_hu": "A PLC online állapota nem állapítható meg; import, fordítás és export csak kifejezetten offline PLC-vel megengedett.", "hint_hu": "Nyisd meg a sandbox-projektet a TIA Portalban, ellenőrizd, hogy a PLC offline („Go offline”), zárd be a projektet, majd ismételd meg." },
+    "CPU_FAMILY_MISMATCH": { "category": "project", "message_hu": "A projektben talált CPU családja eltér a gépmodellben megadottól, vagy nem állapítható meg.", "hint_hu": "Állítsd a Gépmodell CPU-családját a sandbox-projekt PLC-jének megfelelőre, és generáld újra a forrásokat." },
     "BLOCK_COLLISION": { "category": "project", "message_hu": "Generált blokknév már létezik a PLC-ben (alcsoportokat is beleértve)." },
     "IMPORT_FAILED": { "category": "project", "message_hu": "A külső forrás importja vagy a blokkgenerálás sikertelen." },
     "COMPILE_ERROR": { "category": "project", "message_hu": "Az offline fordítás hibát jelzett." },

@@ -295,11 +295,29 @@ namespace TiaStudio.TiaAdapter.Openness
 
         public string Name => software.Name;
 
-        public bool IsOffline()
+        /// <summary>5.9 / 5.11.15.3: DeviceItem.TypeIdentifier, pl. "OrderNumber:6ES7 516-3AN02-0AB0/V2.9".</summary>
+        public string CpuTypeIdentifier => cpu.TypeIdentifier;
+
+        public PlcOnlineState GetOnlineState()
         {
-            // Csak lekérdezés; a worker soha nem hív GoOnline-t.
+            // 5.11.2.5: csak lekérdezés; a worker soha nem hív GoOnline-t. Fail-closed: hiányzó szolgáltatás
+            // vagy nem egyértelmű állapot (Incompatible, NotReachable, Protected) nem számít offline-nak.
             OnlineProvider online = cpu.GetService<OnlineProvider>();
-            return online == null || online.State == OnlineState.Offline;
+            if (online == null)
+            {
+                return PlcOnlineState.Unknown;
+            }
+            switch (online.State)
+            {
+                case OnlineState.Offline:
+                    return PlcOnlineState.Offline;
+                case OnlineState.Online:
+                case OnlineState.Connecting:
+                case OnlineState.Disconnecting:
+                    return PlcOnlineState.Online;
+                default:
+                    return PlcOnlineState.Unknown;
+            }
         }
 
         public IReadOnlyList<ExistingObject> GetAllBlocksAndTypes()

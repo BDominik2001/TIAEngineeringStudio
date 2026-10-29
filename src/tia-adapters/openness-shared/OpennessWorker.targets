@@ -37,6 +37,21 @@
     <Message Importance="high" Condition="'$(TesOpennessAvailable)' != 'true'" Text="[$(AssemblyName)] WARNING: $(TesOpennessDll) not found - building an UNLINKED worker that rejects every TIA operation (WORKER_BUILT_WITHOUT_OPENNESS)." />
   </Target>
 
+  <!--
+    Link-jelölő a worker mellett (<AssemblyName>.openness.json). A főalkalmazás és a configure-workers.ps1
+    ebből látja, hogy a worker Openness-szel fordult-e: az unlinked workerből utólagos .exe.config-írással
+    SEM lesz Openness-worker (a TES_OPENNESS ág nincs benne), azt a TIA-s gépen újra kell fordítani.
+  -->
+  <Target Name="TesWriteOpennessLinkMarker" AfterTargets="Build">
+    <PropertyGroup>
+      <TesOpennessLinkedJson Condition="'$(TesOpennessAvailable)' == 'true'">true</TesOpennessLinkedJson>
+      <TesOpennessLinkedJson Condition="'$(TesOpennessAvailable)' != 'true'">false</TesOpennessLinkedJson>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(TargetDir)$(AssemblyName).openness.json"
+                      Lines="{ &quot;tia_version&quot;: &quot;$(TiaVersion)&quot;, &quot;openness_linked&quot;: $(TesOpennessLinkedJson) }"
+                      Overwrite="true" Encoding="UTF-8" />
+  </Target>
+
   <!-- app.config a helyi telepítés codeBase-ével (strong name ellenőrzés megmarad). -->
   <Target Name="TesWriteOpennessAppConfig" AfterTargets="Build" Condition="'$(TesOpennessAvailable)' == 'true'">
     <PropertyGroup>

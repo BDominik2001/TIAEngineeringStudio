@@ -48,16 +48,28 @@ namespace TiaStudio.Contracts
             return File.ReadAllText(path, Utf8NoBom);
         }
 
-        /// <summary>Átmeneti fájlba ír, majd átnevez – félkész JSON nem maradhat hátra.</summary>
+        /// <summary>
+        /// Átmeneti fájlba ír (lemezre ürítve), majd egy lépésben cseréli a célfájlt: meglévő fájlnál
+        /// File.Replace (Windows: ReplaceFile, Unix: rename), így a célfájl egyik pillanatban sem hiányzik,
+        /// és félkész JSON sem maradhat hátra. Hiba esetén az eredeti fájl változatlan.
+        /// </summary>
         public static void WriteAtomic(string path, object value)
         {
+            byte[] content = Utf8NoBom.GetBytes(Serialize(value) + "\n");
             string temp = path + ".tmp";
-            File.WriteAllText(temp, Serialize(value) + "\n", Utf8NoBom);
+            using (FileStream stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                stream.Write(content, 0, content.Length);
+                stream.Flush(true);
+            }
             if (File.Exists(path))
             {
-                File.Delete(path);
+                File.Replace(temp, path, null);
             }
-            File.Move(temp, path);
+            else
+            {
+                File.Move(temp, path);
+            }
         }
     }
 }

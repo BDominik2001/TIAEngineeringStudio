@@ -74,7 +74,9 @@ namespace TiaStudio.UnitTests
     {
         public string Name { get; set; } = "PLC_1";
 
-        public bool Offline { get; set; } = true;
+        public PlcOnlineState OnlineState { get; set; } = PlcOnlineState.Offline;
+
+        public string CpuTypeIdentifier { get; set; } = "OrderNumber:6ES7 516-3AN02-0AB0/V2.9";
 
         public List<ExistingObject> Blocks { get; } = new List<ExistingObject> { new ExistingObject("Main", "Program blocks") };
 
@@ -86,9 +88,9 @@ namespace TiaStudio.UnitTests
 
         public string FailImportOf { get; set; }
 
-        public bool IsOffline()
+        public PlcOnlineState GetOnlineState()
         {
-            return Offline;
+            return OnlineState;
         }
 
         public IReadOnlyList<ExistingObject> GetAllBlocksAndTypes()
@@ -197,7 +199,7 @@ namespace TiaStudio.UnitTests
                 {
                     ApprovedBy = "tester",
                     ApprovedAtUtc = "2026-10-28T00:00:00Z",
-                    ApprovalDigest = ApprovalDigest.Compute(command, package.ManifestSha256, package.Manifest.Files),
+                    ApprovalDigest = ApprovalDigest.Compute(command, package.ManifestSha256, package.Manifest.Files, SandboxRules.ReadMarker(command.ProjectPath).SandboxId),
                 };
             }
             return command;
@@ -412,9 +414,66 @@ namespace TiaStudio.UnitTests
         [Fact]
         public void OnlinePlcIsRejected()
         {
-            backend.Session.Plc.Offline = false;
+            backend.Session.Plc.OnlineState = PlcOnlineState.Online;
             TiaResult result = Run(ImportCommand());
             Assert.Equal(ErrorCodes.PlcOnline, result.ErrorCode);
+            Assert.Empty(backend.Session.Plc.Imported);
+        }
+
+        [Fact]
+        public void UndeterminableOnlineStateIsRejected()
+        {
+            // Audit A-02: hiányzó OnlineProvider / nem egyértelmű állapot nem számít offline-nak (fail-closed).
+            backend.Session.Plc.OnlineState = PlcOnlineState.Unknown;
+            foreach (bool dryRun in new[] { true, false })
+            {
+                TiaResult result = Run(ImportCommand(dryRun));
+                Assert.Equal(TiaJobStatus.Blocked, result.Status);
+                Assert.Equal(ErrorCodes.PlcOnlineStateUnknown, result.ErrorCode);
+                Assert.Equal(SandboxStates.Unchanged, result.SandboxState);
+            }
+            Assert.Empty(backend.Session.Plc.Imported);
+            Assert.False(backend.Session.Saved);
+        }
+
+        [Theory]
+        [InlineData("OrderNumber:6ES7 214-1AG40-0XB0/V4.6", "S7-1200")]
+        [InlineData("OrderNumber:6ES7 212-1AE40-0XB0", "S7-1200")]
+        [InlineData("OrderNumber:6AG1 214-1AG40-2XB0/V4.5", "S7-1200")]
+        [InlineData("OrderNumber:6ES7 516-3AN02-0AB0/V2.9", "S7-1500")]
+        [InlineData("OrderNumber:6ES7 510-1DJ01-0AB0/V2.0", "S7-1500")]
+        [InlineData("OrderNumber:6ES7516-3AN02-0AB0", "S7-1500")]
+        [InlineData("OrderNumber:6ES7 315-2EH14-0AB0/V3.2", null)]
+        [InlineData("OrderNumber:6AV2 124-2DC01-0AX0//Landscape", null)]
+        [InlineData("GSD:SIEM8139.GSD/M/4", null)]
+        [InlineData("System:Device.S7300", null)]
+        [InlineData("6ES7 516-3AN02-0AB0", null)]
+        [InlineData("", null)]
+        [InlineData(null, null)]
+        public void CpuFamilyIsDerivedFromTheOrderNumber(string typeIdentifier, string family)
+        {
+            Assert.Equal(family, PlcHardware.CpuFamilyOf(typeIdentifier));
+        }
+
+        [Theory]
+        [InlineData("OrderNumber:6ES7 214-1AG40-0XB0/V4.6")]
+        [InlineData("OrderNumber:6ES7 510-1DJ01-0AB0/V2.0")]
+        [InlineData("GSD:SIEM8139.GSD/M/4")]
+        [InlineData(null)]
+        public void CpuFamilyMustMatchTheManifest(string typeIdentifier)
+        {
+            // Audit A-03: a fixture-csomag S7-1500-ra készült; az S7-1200 CPU és a fel nem ismerhető CPU is tiltott.
+            backend.Session.Plc.CpuTypeIdentifier = typeIdentifier;
+            TiaResult result = Run(ImportCommand());
+            if (PlcHardware.CpuFamilyOf(typeIdentifier) == PlcHardware.S71500)
+            {
+                Assert.Equal(TiaJobStatus.Success, result.Status);
+                Assert.Contains(result.Messages, m => m.Text.Contains("S7-1500 (" + typeIdentifier + ")"));
+                return;
+            }
+            Assert.Equal(TiaJobStatus.Blocked, result.Status);
+            Assert.Equal(ErrorCodes.CpuFamilyMismatch, result.ErrorCode);
+            Assert.Equal(SandboxStates.Unchanged, result.SandboxState);
             Assert.Empty(backend.Session.Plc.Imported);
         }
 

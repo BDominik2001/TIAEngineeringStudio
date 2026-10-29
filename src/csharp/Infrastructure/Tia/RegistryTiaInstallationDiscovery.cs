@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using Microsoft.Win32;
 using TiaStudio.Application.Ports;
 using TiaStudio.Contracts;
@@ -71,6 +72,12 @@ namespace TiaStudio.Infrastructure.Tia
 
         /// <summary>(verzió, public key token hex) vagy kivétel, ha nem .NET assembly.</summary>
         Tuple<Version, string> Inspect(string path);
+
+        /// <summary>
+        /// true, ha a worker mellett lévő link-jelölő (&lt;worker&gt;.openness.json) szerint a worker Openness-szel
+        /// fordult. Hiányzó vagy olvashatatlan jelölő = false (fail-closed).
+        /// </summary>
+        bool IsOpennessLinkedWorker(string workerPath);
     }
 
     public sealed class FileAssemblyInspector : IAssemblyInspector
@@ -85,6 +92,37 @@ namespace TiaStudio.Infrastructure.Tia
             AssemblyName name = AssemblyName.GetAssemblyName(path);
             byte[] token = name.GetPublicKeyToken() ?? new byte[0];
             return Tuple.Create(name.Version, string.Concat(token.Select(b => b.ToString("x2", CultureInfo.InvariantCulture))));
+        }
+
+        public bool IsOpennessLinkedWorker(string workerPath)
+        {
+            string marker = WorkerLinkMarker.PathFor(workerPath);
+            if (!File.Exists(marker))
+            {
+                return false;
+            }
+            try
+            {
+                using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(marker)))
+                {
+                    return document.RootElement.ValueKind == JsonValueKind.Object
+                        && document.RootElement.TryGetProperty("openness_linked", out JsonElement linked)
+                        && linked.ValueKind == JsonValueKind.True;
+                }
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is JsonException)
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <summary>A worker build által írt link-jelölő (src/tia-adapters/openness-shared/OpennessWorker.targets).</summary>
+    public static class WorkerLinkMarker
+    {
+        public static string PathFor(string workerPath)
+        {
+            return Path.ChangeExtension(workerPath, ".openness.json");
         }
     }
 
@@ -195,6 +233,14 @@ namespace TiaStudio.Infrastructure.Tia
             {
                 info.ErrorCode = ErrorCodes.TiaNotInstalled;
                 info.Notes.Add("Worker executable " + TiaVersions.WorkerExecutableName(tiaVersion) + " is missing (" + info.WorkerPath + ")");
+                return info;
+            }
+            if (!assemblies.IsOpennessLinkedWorker(info.WorkerPath))
+            {
+                // Audit A-04: TIA nélkül fordított worker; .exe.config-írás nem teszi használhatóvá.
+                info.ErrorCode = ErrorCodes.WorkerBuiltWithoutOpenness;
+                info.Notes.Add("Worker " + TiaVersions.WorkerExecutableName(tiaVersion) + " was built without Openness (" + WorkerLinkMarker.PathFor(info.WorkerPath)
+                    + "); rebuild it on this machine with scripts\\build-tia-workers.ps1 -Versions " + tiaVersion + " -RequireOpenness");
                 return info;
             }
             info.ErrorCode = null;

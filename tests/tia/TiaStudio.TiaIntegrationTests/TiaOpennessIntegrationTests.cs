@@ -22,14 +22,17 @@ namespace TiaStudio.TiaIntegrationTests
     ///   TES_TIA_INTEGRATION        = V18 | V19 | V20
     ///   TES_TIA_KNOWN_GOOD_PROJECT = ismert jó, üres PLC-t tartalmazó .apXX projekt (nem módosul)
     ///   TES_TIA_PLC_NAME           = a PLC neve a projektben (alapértelmezés: PLC_1)
+    ///   TES_TIA_CPU_FAMILY         = a PLC CPU-családja (S7-1200 | S7-1500; üresen az examples-beli érték)
     ///   TES_WORKERS_DIR            = mappa, benne V18\TiaStudio.TiaAdapter.V18.exe stb.
-    /// Az eredmény a docs/COMPATIBILITY.md-be kézzel rögzítendő.
+    /// Az eredmény a docs/COMPATIBILITY.md-be kézzel rögzítendő. Kihagyás csak akkor, ha a TIA-teszt nincs
+    /// bekapcsolva (TES_TIA_INTEGRATION üres); bekapcsolt, de hiányos környezet hiba, nem kihagyás (audit A-09).
     /// </summary>
     public sealed class TiaOpennessIntegrationTests : IDisposable
     {
         private readonly string version = Environment.GetEnvironmentVariable("TES_TIA_INTEGRATION");
         private readonly string knownGood = Environment.GetEnvironmentVariable("TES_TIA_KNOWN_GOOD_PROJECT");
         private readonly string plcName = Environment.GetEnvironmentVariable("TES_TIA_PLC_NAME") ?? "PLC_1";
+        private readonly string cpuFamily = Environment.GetEnvironmentVariable("TES_TIA_CPU_FAMILY");
         private readonly string workersDir = Environment.GetEnvironmentVariable("TES_WORKERS_DIR");
         private readonly string temp = Path.Combine(Path.GetTempPath(), "tes-tia-" + Guid.NewGuid().ToString("N"));
 
@@ -40,9 +43,9 @@ namespace TiaStudio.TiaIntegrationTests
 
         private void RequireTia()
         {
-            Skip.If(string.IsNullOrEmpty(version) || string.IsNullOrEmpty(knownGood) || string.IsNullOrEmpty(workersDir),
-                "TIA integration disabled (set TES_TIA_INTEGRATION, TES_TIA_KNOWN_GOOD_PROJECT, TES_WORKERS_DIR)");
-            Skip.If(Env.Python == null, "Python not found");
+            Skip.If(string.IsNullOrEmpty(version), "TIA integration disabled (set TES_TIA_INTEGRATION, TES_TIA_KNOWN_GOOD_PROJECT, TES_WORKERS_DIR)");
+            Assert.False(string.IsNullOrEmpty(knownGood) || string.IsNullOrEmpty(workersDir), "TES_TIA_KNOWN_GOOD_PROJECT and TES_WORKERS_DIR are required");
+            Assert.True(Env.Python != null, "Python 3.9+ is required for the TIA integration test");
         }
 
         private TiaWorkerProcessClient Client()
@@ -52,14 +55,20 @@ namespace TiaStudio.TiaIntegrationTests
             return new TiaWorkerProcessClient(discovery, workerPath, Path.Combine(temp, "jobs"), TimeSpan.FromMinutes(5));
         }
 
-        private async Task<GenerationResult> Generate()
+        private async Task<GenerationResult> Generate(string family = null)
         {
             string model = File.ReadAllText(Env.PathOf("examples", "machine-" + version.ToLowerInvariant() + ".json")).Replace("\"PLC_1\"", "\"" + plcName + "\"");
-            string input = Path.Combine(temp, "machine.json");
+            family = family ?? (string.IsNullOrEmpty(cpuFamily) ? null : cpuFamily);
+            if (family != null)
+            {
+                model = System.Text.RegularExpressions.Regex.Replace(model, "\"cpu_family\":\\s*\"[^\"]*\"", "\"cpu_family\": \"" + family + "\"");
+            }
+            string run = Guid.NewGuid().ToString("N").Substring(0, 8);
+            string input = Path.Combine(temp, "machine-" + run + ".json");
             Directory.CreateDirectory(temp);
             File.WriteAllText(input, model);
             GenerationResult result = await new PythonSourceGenerator(Env.Python, Env.PathOf("src", "python"), TimeSpan.FromMinutes(2))
-                .GenerateAsync(new GenerationRequest { InputPath = input, OutputDirectory = Path.Combine(temp, "package") }, CancellationToken.None);
+                .GenerateAsync(new GenerationRequest { InputPath = input, OutputDirectory = Path.Combine(temp, "package-" + run) }, CancellationToken.None);
             Assert.True(result.Success, result.Message);
             return result;
         }
@@ -88,7 +97,7 @@ namespace TiaStudio.TiaIntegrationTests
             {
                 ApprovedBy = Environment.UserName,
                 ApprovedAtUtc = DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"),
-                ApprovalDigest = ApprovalDigest.Compute(command, package.ManifestSha256, package.Manifest.Files),
+                ApprovalDigest = ApprovalDigest.Compute(command, package.ManifestSha256, package.Manifest.Files, SandboxRules.ReadMarker(command.ProjectPath).SandboxId),
             };
         }
 
@@ -187,6 +196,25 @@ namespace TiaStudio.TiaIntegrationTests
             TiaResult result = await client.ImportAndCompileAsync(new TiaJobRequest(libraryImport, TimeSpan.FromMinutes(30)), CancellationToken.None);
             Assert.True(result.Status == TiaJobStatus.Success, string.Join("\n", result.Messages));
             Assert.Equal(SandboxStates.Saved, result.SandboxState);
+        }
+
+        /// <summary>Audit A-03: a mintaprojekt CPU-jától eltérő családra generált csomag nem importálható.</summary>
+        [SkippableFact]
+        public async Task WrongCpuFamilyIsRejected()
+        {
+            RequireTia();
+            string actual = PackageFamily(await Generate());
+            GenerationResult package = await Generate(actual == "S7-1500" ? "S7-1200" : "S7-1500");
+            SandboxService sandbox = new SandboxService(Path.Combine(temp, "sandbox"), new SystemClock(), new EnvironmentUserContext());
+            SandboxCopy copy = sandbox.CreateSandboxCopy(knownGood, version);
+            TiaResult result = await Client().ValidateJobAsync(new TiaJobRequest(Command(copy, package, TiaOperations.ValidateJob, true), TimeSpan.FromMinutes(10)), CancellationToken.None);
+            Assert.Equal(ErrorCodes.CpuFamilyMismatch, result.ErrorCode);
+            Assert.Equal(SandboxStates.Unchanged, result.SandboxState);
+        }
+
+        private static string PackageFamily(GenerationResult package)
+        {
+            return PackageVerifier.Verify(package.OutputDirectory, package.ManifestPath).Manifest.CpuFamily;
         }
 
         [SkippableFact]

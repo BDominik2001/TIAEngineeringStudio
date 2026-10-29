@@ -178,10 +178,16 @@ namespace TiaStudio.Contracts
     public sealed class SandboxMarker
     {
         public const string FileName = ".tes-sandbox.json";
-        public const string CurrentVersion = "1.0";
+
+        /// <summary>1.1: sandbox_id (a jóváhagyás ehhez a sandbox-generációhoz kötődik).</summary>
+        public const string CurrentVersion = "1.1";
 
         [JsonProperty("marker_version")]
         public string MarkerVersion { get; set; } = CurrentVersion;
+
+        /// <summary>A sandbox-másolat egyedi azonosítója (kisbetűs UUID); minden új másolatnál új érték.</summary>
+        [JsonProperty("sandbox_id")]
+        public string SandboxId { get; set; }
 
         [JsonProperty("tia_version")]
         public string TiaVersion { get; set; }

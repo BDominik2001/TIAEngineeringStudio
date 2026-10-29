@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -15,6 +14,7 @@ using TiaStudio.Contracts;
 using TiaStudio.Desktop.Services;
 using TiaStudio.Domain.Model;
 using TiaStudio.Domain.Workflow;
+using TiaStudio.Infrastructure.Generator;
 using TiaStudio.Infrastructure.Localization;
 using TiaStudio.Infrastructure.Logging;
 
@@ -136,6 +136,7 @@ namespace TiaStudio.Desktop.ViewModels
         private DeviceRowViewModel selectedDevice;
         private GeneratedFileViewModel selectedFile;
         private string previewText;
+        private string previewError;
         private string sandboxProjectPath;
         private string knownGoodProjectPath;
         private int selectedSection;
@@ -352,8 +353,11 @@ namespace TiaStudio.Desktop.ViewModels
             {
                 if (Set(ref selectedFile, value))
                 {
-                    PreviewText = value == null ? null : ReadPreview(value.FullPath);
-                    if (value != null)
+                    // Audit A-12: "megtekintett" csak a ténylegesen megjelenített, a manifest hash-ével egyező tartalom.
+                    string error = null;
+                    PreviewText = value == null ? null : SourcePreview.Read(value.FullPath, value.Sha256, out error);
+                    PreviewError = error;
+                    if (value != null && error == null)
                     {
                         value.Viewed = true;
                     }
@@ -363,6 +367,9 @@ namespace TiaStudio.Desktop.ViewModels
         }
 
         public string PreviewText { get => previewText; private set => Set(ref previewText, value); }
+
+        /// <summary>Az előnézet hibája (olvashatatlan vagy a manifesttől eltérő fájl); null, ha a forrás megjelent.</summary>
+        public string PreviewError { get => previewError; private set => Set(ref previewError, value); }
 
         public string SandboxProjectPath { get => sandboxProjectPath; set => Set(ref sandboxProjectPath, value); }
 
@@ -727,18 +734,6 @@ namespace TiaStudio.Desktop.ViewModels
             else
             {
                 ui.Post(_ => action(), null);
-            }
-        }
-
-        private static string ReadPreview(string path)
-        {
-            try
-            {
-                return File.ReadAllText(path, new UTF8Encoding(false, false));
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-            {
-                return "// A fájl nem olvasható: " + ex.Message;
             }
         }
 

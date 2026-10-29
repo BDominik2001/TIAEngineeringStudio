@@ -52,6 +52,7 @@ namespace TiaStudio.Infrastructure.Sandbox
             CopyDirectory(sourceDirectory, staging);
             SandboxMarker marker = new SandboxMarker
             {
+                SandboxId = Guid.NewGuid().ToString(),
                 TiaVersion = tiaVersion,
                 ProjectFile = Path.GetFileName(sourceFile),
                 SourceProjectPath = sourceFile,
@@ -78,6 +79,11 @@ namespace TiaStudio.Infrastructure.Sandbox
             Directory.CreateDirectory(destination);
             foreach (string file in Directory.GetFiles(source))
             {
+                if ((File.GetAttributes(file) & FileAttributes.ReparsePoint) != 0)
+                {
+                    // Linkelt fájl esetén a "másolat" nem lenne független az eredetitől (audit A-06).
+                    throw new SandboxException(ErrorCodes.PathEscape, "Project folder contains a linked file: " + file);
+                }
                 string name = Path.GetFileName(file);
                 if (name == SandboxMarker.FileName)
                 {

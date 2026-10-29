@@ -408,7 +408,7 @@ namespace TiaStudio.UnitTests
         [Fact]
         public void ExportRequiresOfflinePlcButListingDoesNot()
         {
-            backend.Session.Plc.Offline = false;
+            backend.Session.Plc.OnlineState = PlcOnlineState.Online;
             Assert.Equal(TiaJobStatus.Success, Run(Command(TiaOperations.ListBlocks)).Status);
             Assert.Equal(ErrorCodes.PlcOnline, Run(Command(TiaOperations.ExportBlocks, Request("FB_Motor", BlockFormats.SimaticMl))).ErrorCode);
             Assert.Empty(backend.Session.Plc.Exported);
@@ -446,7 +446,7 @@ namespace TiaStudio.UnitTests
                 DryRun = false,
                 ApprovedByUser = true,
             };
-            command.Approval = new ApprovalRecord { ApprovedBy = "t", ApprovedAtUtc = "x", ApprovalDigest = ApprovalDigest.Compute(command, verified.ManifestSha256, verified.Manifest.Files) };
+            command.Approval = new ApprovalRecord { ApprovedBy = "t", ApprovedAtUtc = "x", ApprovalDigest = ApprovalDigest.Compute(command, verified.ManifestSha256, verified.Manifest.Files, SandboxRules.ReadMarker(command.ProjectPath).SandboxId) };
 
             TiaResult result = Run(command);
 

@@ -47,11 +47,12 @@ jobs:
       - name: Build (worker linked against the installed Openness)
         shell: pwsh
         run: ./scripts/build-desktop.ps1 -TiaVersions ${{ matrix.tia }} -RequireOpenness -Dist "$env:RUNNER_TEMP\tes-${{ matrix.tia }}"
-      - name: Integration test (sandbox copy, offline compile)
+      - name: Integration test (sandbox copy, offline compile; skipped tests = failure)
         shell: pwsh
         env:
           KNOWN_GOOD: ${{ vars[format('TES_TIA_KNOWN_GOOD_PROJECT_{0}', matrix.tia)] }}
-        run: ./scripts/test-tia-integration.ps1 -Version ${{ matrix.tia }} -KnownGoodProject $env:KNOWN_GOOD -WorkersDir "$env:RUNNER_TEMP\tes-${{ matrix.tia }}\workers"
+          CPU_FAMILY: ${{ vars[format('TES_TIA_CPU_FAMILY_{0}', matrix.tia)] }}
+        run: ./scripts/test-tia-integration.ps1 -Version ${{ matrix.tia }} -KnownGoodProject $env:KNOWN_GOOD -CpuFamily "$env:CPU_FAMILY" -WorkersDir "$env:RUNNER_TEMP\tes-${{ matrix.tia }}\workers"
       - name: Result summary
         if: always()
         shell: pwsh

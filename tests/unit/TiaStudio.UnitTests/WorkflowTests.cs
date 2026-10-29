@@ -201,7 +201,7 @@ namespace TiaStudio.UnitTests
             Assert.Equal(version, import.TiaVersion);
             Assert.False(import.DryRun);
             Assert.True(import.ApprovedByUser);
-            Assert.Equal(ApprovalDigest.Compute(import, workflow.Package.ManifestSha256, workflow.Package.Manifest.Files), import.Approval.ApprovalDigest);
+            Assert.Equal(ApprovalDigest.Compute(import, workflow.Package.ManifestSha256, workflow.Package.Manifest.Files, SandboxRules.ReadMarker(import.ProjectPath).SandboxId), import.Approval.ApprovalDigest);
             Assert.NotEqual(worker.Commands[0].JobId, import.JobId);
 
             string[] states = audit.Events.Select(e => e.State).ToArray();
@@ -253,6 +253,22 @@ namespace TiaStudio.UnitTests
             Assert.Equal(ErrorCodes.HashMismatch, result.ErrorCode);
             Assert.Equal(WorkflowState.Failed, workflow.State);
             Assert.Empty(worker.Commands);
+        }
+
+        [Fact]
+        public async Task SandboxRecreatedAfterApprovalNeedsNewApproval()
+        {
+            // Audit A-05: ugyanazon útvonalra új sandbox-másolat kerül (új sandbox_id) -> a régi jóváhagyás érvénytelen.
+            string project = await AdvanceToReviewed();
+            Assert.True(workflow.Approve(project).Ok);
+            Assert.True((await workflow.PrepareImportAsync(CancellationToken.None)).Ok);
+            string markerPath = Path.Combine(Path.GetDirectoryName(project), SandboxMarker.FileName);
+            SandboxMarker marker = SandboxRules.ReadMarker(project);
+            marker.SandboxId = Guid.NewGuid().ToString();
+            ProtocolJson.WriteAtomic(markerPath, marker);
+            StepResult result = await workflow.ImportAndCompileAsync(CancellationToken.None);
+            Assert.Equal(ErrorCodes.ApprovalInvalid, result.ErrorCode);
+            Assert.DoesNotContain(worker.Commands, c => c.Operation == TiaOperations.ImportAndCompile);
         }
 
         [Fact]

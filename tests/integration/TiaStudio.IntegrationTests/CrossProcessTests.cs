@@ -173,7 +173,7 @@ namespace TiaStudio.IntegrationTests
             public Task<TiaResult> ImportAndCompileAsync(TiaJobRequest request, CancellationToken cancellationToken)
             {
                 PackageVerificationResult package = PackageVerifier.Verify(request.Command.SourcesDirectory, request.Command.ManifestPath);
-                Assert.Equal(ApprovalDigest.Compute(request.Command, package.ManifestSha256, package.Manifest.Files), request.Command.Approval.ApprovalDigest);
+                Assert.Equal(ApprovalDigest.Compute(request.Command, package.ManifestSha256, package.Manifest.Files, SandboxRules.ReadMarker(request.Command.ProjectPath).SandboxId), request.Command.Approval.ApprovalDigest);
                 TiaResult result = Check(request.Command, TiaJobStatus.Success, SandboxStates.Saved);
                 result.SavedProject = true;
                 return Task.FromResult(result);

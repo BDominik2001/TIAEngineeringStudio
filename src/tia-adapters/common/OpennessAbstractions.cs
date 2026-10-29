@@ -49,8 +49,17 @@ namespace TiaStudio.TiaAdapter.Common
     {
         string Name { get; }
 
-        /// <summary>true, ha a PLC offline (a worker soha nem kapcsol online-ba).</summary>
-        bool IsOffline();
+        /// <summary>
+        /// A CPU hardverazonosítója (DeviceItem.TypeIdentifier, pl. "OrderNumber:6ES7 516-3AN02-0AB0/V2.9"),
+        /// vagy null, ha nem olvasható. A CPU-családot ebből a <see cref="PlcHardware"/> határozza meg.
+        /// </summary>
+        string CpuTypeIdentifier { get; }
+
+        /// <summary>
+        /// Az online állapot lekérdezése (a worker soha nem kapcsol online-ba). Hiányzó OnlineProvider vagy
+        /// nem egyértelmű állapot = <see cref="PlcOnlineState.Unknown"/>; írni/exportálni csak Offline mellett szabad.
+        /// </summary>
+        PlcOnlineState GetOnlineState();
 
         /// <summary>Minden blokk és típus (UDT) rekurzívan, az összes felhasználói és rendszer-alcsoporttal.</summary>
         IReadOnlyList<ExistingObject> GetAllBlocksAndTypes();
@@ -74,6 +83,58 @@ namespace TiaStudio.TiaAdapter.Common
 
         /// <summary>SimaticML import a gyökércsoportba felülírás nélkül (ImportOptions.None).</summary>
         void ImportSimaticMl(string blockType, string filePath);
+    }
+
+    public enum PlcOnlineState
+    {
+        /// <summary>Kifejezetten offline (OnlineState.Offline): az egyetlen engedélyező állapot.</summary>
+        Offline,
+
+        /// <summary>Online, kapcsolódó vagy bontó kapcsolat.</summary>
+        Online,
+
+        /// <summary>Nem lekérdezhető vagy nem egyértelmű (nincs OnlineProvider, Incompatible, NotReachable, Protected).</summary>
+        Unknown,
+    }
+
+    /// <summary>A CPU-család meghatározása a TIA-projekt hardverazonosítójából (Siemens-típusok nélkül).</summary>
+    public static class PlcHardware
+    {
+        public const string S71200 = "S7-1200";
+        public const string S71500 = "S7-1500";
+
+        /// <summary>
+        /// "OrderNumber:&lt;rendelési szám&gt;[/&lt;firmware&gt;]" (V18 kézikönyv 5.9, TypeIdentifier). S7-1200 CPU:
+        /// 6ES7 21x-…, S7-1500 CPU (ET 200SP/pro CPU-k is): 6ES7 51x-…; SIPLUS-változat: 6AG1/6AG2 ugyanígy.
+        /// Minden más (GSD/System azonosító, ismeretlen rendelési szám) = null, vagyis nem ellenőrizhető.
+        /// </summary>
+        public static string CpuFamilyOf(string typeIdentifier)
+        {
+            const string prefix = "OrderNumber:";
+            if (string.IsNullOrEmpty(typeIdentifier) || !typeIdentifier.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                return null;
+            }
+            string orderNumber = typeIdentifier.Substring(prefix.Length);
+            int slash = orderNumber.IndexOf('/');
+            if (slash >= 0)
+            {
+                orderNumber = orderNumber.Substring(0, slash);
+            }
+            orderNumber = orderNumber.Replace(" ", string.Empty).ToUpperInvariant();
+            if (orderNumber.Length < 8 || !(orderNumber.StartsWith("6ES7", StringComparison.Ordinal)
+                || orderNumber.StartsWith("6AG1", StringComparison.Ordinal) || orderNumber.StartsWith("6AG2", StringComparison.Ordinal)))
+            {
+                return null;
+            }
+            string series = orderNumber.Substring(4, 2);
+            bool digit = char.IsDigit(orderNumber[6]) && orderNumber[7] == '-';
+            if (!digit)
+            {
+                return null;
+            }
+            return series == "21" ? S71200 : series == "51" ? S71500 : null;
+        }
     }
 
     public sealed class OpennessProblem

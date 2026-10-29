@@ -110,7 +110,7 @@
         "approval_digest": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$",
-          "description": "ApprovalDigest v1 (docs/API_CONTRACTS.md): SHA-256 a job_id, művelet, verzió, projektútvonal, PLC, felülírási szabály, manifest-hash és minden forrás-hash kanonikus szövegén."
+          "description": "ApprovalDigest v2 (docs/API_CONTRACTS.md): SHA-256 a job_id, művelet, verzió, projektútvonal, sandbox_id, PLC, felülírási szabály, manifest-hash és minden forrás-hash kanonikus szövegén."
         }
       }
     },

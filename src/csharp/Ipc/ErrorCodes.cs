@@ -58,6 +58,8 @@ namespace TiaStudio.Contracts
         public const string ProjectUpgradeRequired = "PROJECT_UPGRADE_REQUIRED";
         public const string PlcNotFound = "PLC_NOT_FOUND";
         public const string PlcOnline = "PLC_ONLINE";
+        public const string PlcOnlineStateUnknown = "PLC_ONLINE_STATE_UNKNOWN";
+        public const string CpuFamilyMismatch = "CPU_FAMILY_MISMATCH";
         public const string BlockCollision = "BLOCK_COLLISION";
         public const string ImportFailed = "IMPORT_FAILED";
         public const string CompileError = "COMPILE_ERROR";

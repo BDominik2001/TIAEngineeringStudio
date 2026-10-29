@@ -331,9 +331,22 @@ namespace TiaStudio.Contracts
         public const string RecursiveBlockCollisionCheck = "recursive_block_collision_check";
         public const string ProjectUpgrade = "project_upgrade";
         public const string Hmi = "hmi";
+
+        /// <summary>
+        /// Általános SimaticML-import (a gépmodellből generált csomag SimaticML-ként, hardver-/változótábla-objektumok,
+        /// más TIA-verzióból származó XML). Az MVP-ben nincs: mindig false.
+        /// </summary>
         public const string SimaticMlImport = "simaticml_import";
+
         public const string PlcDownload = "plc_download";
+
+        /// <summary>Egyedi PLC-blokk/UDT exportja a blokk-könyvtárba (forrás vagy SimaticML).</summary>
         public const string BlockExport = "block_export";
+
+        /// <summary>
+        /// Szűk hatókörű SimaticML-import: csak a blokk-könyvtárból, ugyanazon TIA-verzióban exportált egyedi
+        /// PLC-blokk/UDT, felülírás nélkül (ImportOptions.None). Nem jelenti az általános <see cref="SimaticMlImport"/>-ot.
+        /// </summary>
         public const string SimaticMlBlockImport = "simaticml_block_import";
     }
 }

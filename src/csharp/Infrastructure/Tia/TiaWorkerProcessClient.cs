@@ -109,17 +109,18 @@ namespace TiaStudio.Infrastructure.Tia
             {
                 return Synthesized(command, TiaJobStatus.Failed, ErrorCodes.WorkerCrashed, "Worker could not be started: " + run.StartError, SandboxStates.NotTouched);
             }
+            string tree = run.ProcessTreeNote == null ? string.Empty : " " + run.ProcessTreeNote;
             if (run.Cancelled)
             {
-                return Synthesized(command, TiaJobStatus.Cancelled, ErrorCodes.Cancelled, "Cancelled; worker process was terminated. Sandbox state must be checked manually.", unknownState);
+                return Synthesized(command, TiaJobStatus.Cancelled, ErrorCodes.Cancelled, "Cancelled; worker process was terminated. Sandbox state must be checked manually." + tree, unknownState);
             }
             if (run.TimedOut)
             {
-                return Synthesized(command, TiaJobStatus.Failed, ErrorCodes.Timeout, "Worker timed out after " + request.Timeout + " and was terminated. Sandbox state is UNKNOWN; restore it from the known-good copy.", unknownState);
+                return Synthesized(command, TiaJobStatus.Failed, ErrorCodes.Timeout, "Worker timed out after " + request.Timeout + " and was terminated. Sandbox state is UNKNOWN; restore it from the known-good copy." + tree, unknownState);
             }
             if (!File.Exists(resultPath))
             {
-                return Synthesized(command, TiaJobStatus.Failed, ErrorCodes.WorkerCrashed, "Worker exited with code " + run.ExitCode + " without a result file. " + Tail(run.StandardError), unknownState);
+                return Synthesized(command, TiaJobStatus.Failed, ErrorCodes.WorkerCrashed, "Worker exited with code " + run.ExitCode + " without a result file." + tree + " " + Tail(run.StandardError), unknownState);
             }
             TiaResult result;
             try
@@ -133,6 +134,10 @@ namespace TiaStudio.Infrastructure.Tia
             if (result == null || result.JobId != command.JobId || result.ActualVersion != command.TiaVersion || result.ProtocolVersion != ProtocolVersions.Current)
             {
                 return Synthesized(command, TiaJobStatus.Failed, ErrorCodes.WorkerVersionMismatch, "Worker result does not match the job (job id, protocol or TIA version)", unknownState);
+            }
+            if (run.ProcessTreeNote != null)
+            {
+                result.Messages.Add(new TiaMessage(MessageSeverity.Warning, null, run.ProcessTreeNote));
             }
             return result;
         }

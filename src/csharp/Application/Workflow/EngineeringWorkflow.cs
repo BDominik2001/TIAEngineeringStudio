@@ -307,8 +307,9 @@ namespace TiaStudio.Application.Workflow
         }
 
         /// <summary>
-        /// Jóváhagyás egy konkrét sandbox-projektre. A jóváhagyás a projektútvonalhoz, a PLC-hez,
-        /// a manifesthez, az összes forráshashhez és az új job_id-hoz kötött (ApprovalDigest v1).
+        /// Jóváhagyás egy konkrét sandbox-projektre. A jóváhagyás a projektútvonalhoz, a sandbox-másolat
+        /// azonosítójához, a PLC-hez, a manifesthez, az összes forráshashhez és az új job_id-hoz kötött
+        /// (ApprovalDigest v2).
         /// </summary>
         public StepResult Approve(string sandboxProjectPath)
         {
@@ -327,6 +328,7 @@ namespace TiaStudio.Application.Workflow
                     return integrity;
                 }
                 SandboxProjectPath = Path.GetFullPath(sandboxProjectPath);
+                string sandboxId = SandboxRules.ReadMarker(SandboxProjectPath).SandboxId;
                 TiaCommand command = new TiaCommand
                 {
                     JobId = Guid.NewGuid().ToString(),
@@ -345,10 +347,10 @@ namespace TiaStudio.Application.Workflow
                 {
                     ApprovedBy = user.UserName,
                     ApprovedAtUtc = clock.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
-                    ApprovalDigest = ApprovalDigest.Compute(command, Package.ManifestSha256, Package.Manifest.Files),
+                    ApprovalDigest = ApprovalDigest.Compute(command, Package.ManifestSha256, Package.Manifest.Files, sandboxId),
                 };
                 ApprovedCommand = command;
-                MoveTo(WorkflowState.Approved, "Approved", command.JobId, "project " + SandboxProjectPath + ", digest " + command.Approval.ApprovalDigest);
+                MoveTo(WorkflowState.Approved, "Approved", command.JobId, "project " + SandboxProjectPath + ", sandbox " + sandboxId + ", digest " + command.Approval.ApprovalDigest);
                 return StepResult.Success("Approved for " + SandboxProjectPath);
             });
         }
@@ -392,10 +394,15 @@ namespace TiaStudio.Application.Workflow
                 {
                     return integrity;
                 }
-                string digest = ApprovalDigest.Compute(ApprovedCommand, Package.ManifestSha256, Package.Manifest.Files);
+                Tuple<string, string> sandboxProblem = sandbox.Verify(SandboxProjectPath, TiaVersion);
+                if (sandboxProblem != null)
+                {
+                    return Fail(sandboxProblem.Item1, sandboxProblem.Item2);
+                }
+                string digest = ApprovalDigest.Compute(ApprovedCommand, Package.ManifestSha256, Package.Manifest.Files, SandboxRules.ReadMarker(SandboxProjectPath).SandboxId);
                 if (digest != ApprovedCommand.Approval.ApprovalDigest)
                 {
-                    return Fail(ErrorCodes.ApprovalInvalid, "Approval digest no longer matches the package");
+                    return Fail(ErrorCodes.ApprovalInvalid, "Approval digest no longer matches the package or the sandbox copy (it was recreated after the approval); approve again");
                 }
                 ImportResult = await workerClient.ImportAndCompileAsync(new TiaJobRequest(ApprovedCommand, options.ImportTimeout), cancellationToken).ConfigureAwait(false);
                 List<string> details = ImportResult.Messages.Select(m => m.ToString()).ToList();
