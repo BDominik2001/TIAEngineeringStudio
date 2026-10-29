@@ -368,7 +368,7 @@
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Azonosító" Width="120" Binding="{Binding Id, UpdateSourceTrigger=PropertyChanged}" />
                                         <DataGridTextColumn Header="Fajta" Width="90" Binding="{Binding Kind, Mode=OneWay}" IsReadOnly="True" />
-                                        <DataGridTextColumn Header="Leírás (ASCII)" Width="*" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
+                                        <DataGridTextColumn Header="Leírás (ASCII)" Width="*" MinWidth="140" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
                                         <DataGridTextColumn Header="Hátsó végállás" Width="130" Binding="{Binding RetractedInput, UpdateSourceTrigger=PropertyChanged}" />
                                         <DataGridTextColumn Header="Első végállás" Width="130" Binding="{Binding ExtendedInput, UpdateSourceTrigger=PropertyChanged}" />
                                         <DataGridTextColumn Header="Felügyeleti idő [ms]" Width="150" Binding="{Binding MonitorTimeMs, TargetNullValue='', UpdateSourceTrigger=LostFocus}" />
@@ -523,7 +523,7 @@
                                         <DataGridTextColumn Header="Állapot" Width="110" Binding="{Binding Status}" />
                                         <DataGridTextColumn Header="Assembly" Width="90" Binding="{Binding AssemblyVersion}" />
                                         <DataGridTextColumn Header="Siemens.Engineering.dll" Width="300" Binding="{Binding EngineeringDllPath}" />
-                                        <DataGridTextColumn Header="Megjegyzés" Width="*" Binding="{Binding Notes[0]}" />
+                                        <DataGridTextColumn Header="Megjegyzés" Width="*" MinWidth="140" Binding="{Binding Notes[0]}" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </HeaderedContentControl>
@@ -548,9 +548,9 @@
                                     <DataGrid ItemsSource="{Binding ImportPlan}" IsReadOnly="True">
                                         <DataGrid.Columns>
                                             <DataGridTextColumn Header="#" Binding="{Binding ImportOrder}" />
-                                            <DataGridTextColumn Header="Blokk" Width="*" Binding="{Binding BlockName}" />
+                                            <DataGridTextColumn Header="Blokk" Width="*" MinWidth="140" Binding="{Binding BlockName}" />
                                             <DataGridTextColumn Header="Művelet" Binding="{Binding Action}" />
-                                            <DataGridTextColumn Header="Meglévő hely" Width="*" Binding="{Binding ExistingLocation}" />
+                                            <DataGridTextColumn Header="Meglévő hely" Width="*" MinWidth="140" Binding="{Binding ExistingLocation}" />
                                         </DataGrid.Columns>
                                     </DataGrid>
                                 </HeaderedContentControl>
@@ -560,7 +560,7 @@
                                             <DataGridTextColumn Header="Szint" Binding="{Binding Depth}" />
                                             <DataGridTextColumn Header="Állapot" Binding="{Binding State}" />
                                             <DataGridTextColumn Header="Hely" Width="250" Binding="{Binding Path}" />
-                                            <DataGridTextColumn Header="Leírás" Width="*" Binding="{Binding Description}" />
+                                            <DataGridTextColumn Header="Leírás" Width="*" MinWidth="140" Binding="{Binding Description}" />
                                         </DataGrid.Columns>
                                     </DataGrid>
                                 </HeaderedContentControl>
@@ -657,7 +657,7 @@
                                                     <DataGridTextColumn Header="Formátum" Binding="{Binding Format, Mode=OneWay}" IsReadOnly="True" />
                                                     <DataGridTextColumn Header="Forrás TIA" Binding="{Binding SourceTiaVersion, Mode=OneWay}" IsReadOnly="True" />
                                                     <DataGridTextColumn Header="Nyelv" Binding="{Binding Language, Mode=OneWay}" IsReadOnly="True" />
-                                                    <DataGridTextColumn Header="Leírás" Width="*" Binding="{Binding Description, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Leírás" Width="*" MinWidth="140" Binding="{Binding Description, Mode=OneWay}" IsReadOnly="True" />
                                                     <DataGridTextColumn Header="Eredet" Binding="{Binding Origin, Mode=OneWay}" IsReadOnly="True" />
                                                     <DataGridTextColumn Header="Felvéve" Binding="{Binding Added, Mode=OneWay}" IsReadOnly="True" />
                                                 </DataGrid.Columns>
@@ -696,7 +696,7 @@
                                                         </DataGridTemplateColumn.CellTemplate>
                                                     </DataGridTemplateColumn>
                                                     <DataGridTextColumn Header="Hely" Width="180" Binding="{Binding Location, Mode=OneWay}" IsReadOnly="True" />
-                                                    <DataGridTextColumn Header="Megjegyzés" Width="*" Binding="{Binding Note, Mode=OneWay}" IsReadOnly="True" />
+                                                    <DataGridTextColumn Header="Megjegyzés" Width="*" MinWidth="140" Binding="{Binding Note, Mode=OneWay}" IsReadOnly="True" />
                                                 </DataGrid.Columns>
                                             </DataGrid>
                                         </DockPanel>
@@ -735,12 +735,12 @@
                                         </Style>
                                     </DataGrid.RowStyle>
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Idő" Width="70" Binding="{Binding Time}" />
-                                        <DataGridTextColumn Header="Esemény" Width="170" Binding="{Binding Event}" />
-                                        <DataGridTextColumn Header="Állapot" Width="120" Binding="{Binding State}" />
-                                        <DataGridTextColumn Header="TIA" Width="50" Binding="{Binding TiaVersion}" />
-                                        <DataGridTextColumn Header="Hibakód" Width="190" Binding="{Binding ErrorCode}" />
-                                        <DataGridTextColumn Header="Üzenet" Width="*" Binding="{Binding Message}">
+                                        <DataGridTextColumn Header="Idő" Width="64" Binding="{Binding Time}" />
+                                        <DataGridTextColumn Header="Esemény" Width="150" Binding="{Binding Event}" />
+                                        <DataGridTextColumn Header="Állapot" Width="104" Binding="{Binding State}" />
+                                        <DataGridTextColumn Header="TIA" Width="56" Binding="{Binding TiaVersion}" />
+                                        <DataGridTextColumn Header="Hibakód" Width="160" Binding="{Binding ErrorCode}" />
+                                        <DataGridTextColumn Header="Üzenet" Width="*" MinWidth="260" Binding="{Binding Message}">
                                             <DataGridTextColumn.ElementStyle>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="TextWrapping" Value="Wrap" />

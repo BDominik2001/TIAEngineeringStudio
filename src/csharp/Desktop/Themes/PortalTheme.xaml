@@ -825,6 +825,10 @@
         <Setter Property="CanUserAddRows" Value="False" />
         <Setter Property="CanUserDeleteRows" Value="False" />
         <Setter Property="AutoGenerateColumns" Value="False" />
+        <!-- Szűk helyen a WPF a * oszlop mellett minden oszlopot a minimumig nyomna össze (20 px:
+             betűnkénti tördelés, csonka fejlécek); ehelyett vízszintes görgetősáv jelenjen meg. -->
+        <Setter Property="MinColumnWidth" Value="56" />
+        <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
     </Style>
 
     <!-- ListView fejléc -->
