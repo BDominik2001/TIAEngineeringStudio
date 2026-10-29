@@ -34,7 +34,7 @@ $examplesTarget = Join-Path $Dist 'examples'
 New-Item -ItemType Directory -Force $examplesTarget | Out-Null
 Copy-Item (Join-Path $RepoRoot 'examples\*.json') $examplesTarget
 
-& "$PSScriptRoot\build-tia-workers.ps1" -Configuration $Configuration -Versions $TiaVersions -OutputRoot (Join-Path $Dist 'workers') -RequireOpenness:$RequireOpenness -Version $ReleaseVersion
+& "$PSScriptRoot\build-tia-workers.ps1" -Configuration $Configuration -Versions $TiaVersions -OutputRoot (Join-Path $Dist 'workers') -RequireOpenness:$RequireOpenness -ReleaseVersion $ReleaseVersion
 
 Write-Step 'Buildazonosító (build-info.json, docs/VERSIONING.md)'
 $buildInfo = Join-Path $RepoRoot 'scripts\tools\build_info.py'
