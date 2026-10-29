@@ -13,6 +13,9 @@ az adott verzióra sikeresen lefutott, és az eredmény itt rögzítve) · **Sup
 (a worker megépül a saját Openness-szel, valódi TIA-teszt még nincs) · **Build only** (csak „unlinked”
 worker, Openness nélkül) · **Unsupported**. A sikeres fordítás önmagában soha nem „tested”; a
 `Skipped` / `Not tested` eredmény nem helyettesíthető `Passed`-del.
+A kiadási csomagok állapotát a [RELEASE_PROCESS.md](RELEASE_PROCESS.md#kiadási-kapu-tia-integrációs-teszt)
+kapuja adja: stabil kiadás csak „Supported & tested” lehet; előzetes kiadás teszt nélküli csomagja
+„Untested development build”.
 
 | TIA | Állapot | Adapter / build | Openness assembly | Siemens frissítési szint | Windows | CPU / HMI | Import | Compile | Export | Utolsó teszt | CI job / report | Ismert problémák |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|

@@ -12,6 +12,11 @@ Minden tényleges kiadást egy SemVer Git-tag és egy GitHub Release képvisel. 
 | Release Candidate | `v0.4.0-rc.1` | pre-release |
 | Stable | `v0.4.0` | release |
 
+A tag alapverziója (az utótag nélkül, pl. `0.4.0`) egyezzen a `Directory.Build.props` `<Version>`
+értékével; az előzetes-kiadás utótag csak `-alpha.N`, `-beta.N` vagy `-rc.N` lehet (N ≥ 1). A csomagnevek,
+a `release-manifest.json` és az alkalmazás InformationalVersion-je a **teljes** tag-verziót hordozza
+(pl. `0.4.0-beta.1`). Ellenőrzés: `python scripts/tools/release_manifest.py --check-tag v0.4.0-beta.1`.
+
 ## Kiadási állományok
 
 | Fájl | Tartalom |
@@ -22,9 +27,21 @@ Minden tényleges kiadást egy SemVer Git-tag és egy GitHub Release képvisel. 
 | `checksums.sha256` | a csomagok SHA-256-ja |
 | `release-manifest.json` | tag, commit, séma-/protokoll-/sablonverzió, csomagonként a kompatibilitási állapot és a TIA-teszt futásának linkje |
 
-A Siemens DLL-ek egyik csomagban sincsenek. Egy csomag **csak** akkor kap „Supported & tested” állapotot,
-ha ugyanabban a kiadási futásban a valódi TIA-integrációs teszt az adott verzióra sikeresen lefutott;
-egyébként „Supported, integration test pending”. Sikertelen TIA-teszt esetén nem készül kiadás.
+A Siemens DLL-ek egyik csomagban sincsenek.
+
+## Kiadási kapu: TIA-integrációs teszt
+
+| Kiadás | V18/V19/V20 TIA-integrációs teszt | Csomag állapota |
+|---|---|---|
+| **Stable** (`vX.Y.Z`) | **kötelező mindhárom verzióra**; hiányzó `TES_TIA_KNOWN_GOOD_PROJECT_Vxx` változó, ki nem futott teszt vagy hiányzó csomag = a kiadás megáll | „Supported & tested” |
+| Előzetes (`-alpha/-beta/-rc`) | ajánlott; teszt nélkül is készülhet | tesztelt: „Supported & tested”; nem tesztelt: **„Untested development build”** – nem nevezhető Openness-kompatibilisnek, a release notes figyelmeztetéssel kezdődik |
+| bármely | sikertelen teszt | a kiadás megáll |
+
+A sikeres fordítás önmagában soha nem „tested”. Lefutott teszt esetén a `release-manifest.json`
+csomagonként rögzíti a tesztkörnyezetet (`testEnvironment`): Windows-verzió, a használt
+`Siemens.Engineering.dll` útvonala, fájl- és termékverziója (TIA Update), a mintaprojekt neve és SHA-256-ja,
+a tesztelt commit és a runner neve; a release notes is felsorolja. Tesztelés kizárólag engedélyezett,
+elkülönített, licencelt Windows gépen, demó/sandbox projekttel.
 
 ## Runnerek és környezetek (egyszeri beállítás)
 
@@ -54,10 +71,12 @@ A CI nem tölt le programot PLC-re, nem indít/állít meg PLC-t, és nem módos
    - `docs/COMPATIBILITY.md` friss (a `tia-integration` workflow legutóbbi futásai alapján).
 3. Merge után a `main` megfelelő commitjára tag: `git tag -a v<ver> -m "TIA Engineering Studio v<ver>"` és push.
 4. A `release` workflow:
-   - `verify`: tag = alkalmazásverzió, a Release még nem létezik, van CHANGELOG-szakasz, offline tesztek;
-   - `package` (V18/V19/V20 párhuzamosan, jóváhagyás után): csomag `-RequireOpenness`-szel, TIA-integrációs
-     teszt sandboxon (ha be van állítva a változó), eredmény-artifact;
-   - `publish`: `checksums.sha256`, `release-manifest.json`, release notes, **piszkozat** Release.
+   - `verify`: tag-formátum, alapverzió = `Directory.Build.props`, a Release még nem létezik, van
+     CHANGELOG-szakasz (előzetes kiadásnál `[X.Y.Z-ch.N]`, `[X.Y.Z]` vagy `[Unreleased]`), offline tesztek;
+   - `package` (V18/V19/V20 párhuzamosan, jóváhagyás után): csomag `-RequireOpenness`-szel és a teljes
+     tag-verzióval, TIA-integrációs teszt sandboxon a fenti kapu szerint, tesztkörnyezet, eredmény-artifact;
+   - `publish`: a kapu újraellenőrzése, `checksums.sha256`, `release-manifest.json`, release notes,
+     **piszkozat** Release (előzetes kiadásnál pre-release jelöléssel).
 5. A kiadáskezelő a checklist alapján átnézi a piszkozatot, majd publikálja.
 
 A release notes automatikusan tartalmazza: a CHANGELOG-szakaszt (újdonságok, hibajavítások, ismert
@@ -67,9 +86,10 @@ TIA-verziókat, a verziókat, a commit SHA-t, az előfeltételeket és az ellen�
 ## Kiadási checklist
 
 - [ ] Main ág CI-tesztje sikeres
-- [ ] V18 integrációs teszt dokumentált
-- [ ] V19 integrációs teszt dokumentált
-- [ ] V20 integrációs teszt dokumentált
+- [ ] V18 integrációs teszt dokumentált (stable: kötelező, a workflow kikényszeríti)
+- [ ] V19 integrációs teszt dokumentált (stable: kötelező, a workflow kikényszeríti)
+- [ ] V20 integrációs teszt dokumentált (stable: kötelező, a workflow kikényszeríti)
+- [ ] Előzetes kiadásnál a nem tesztelt csomagok „Untested development build” jelölése ellenőrizve
 - [ ] Kompatibilitási mátrix friss (`docs/COMPATIBILITY.md`)
 - [ ] `CHANGELOG.md` friss
 - [ ] Sémaverzió és migráció dokumentált
