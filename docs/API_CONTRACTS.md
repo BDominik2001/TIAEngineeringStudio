@@ -10,9 +10,9 @@ protokoll-/sémaverzió-növelés és migrációs teszt kötelező (spec 10.2).
 | Worker-eredmény | `contracts/tia-result.schema.json` | `protocol_version` 1.1 |
 | Generálási / importcsomag-manifest | `contracts/generation-manifest.schema.json` | `manifest_version` 1.0 (generátor), 1.1 (könyvtárimport) |
 | Blokk-könyvtár index | `contracts/block-library.schema.json` (`library.json`) | `library_format_version` 1.0 |
-| Hibakódok | `contracts/error-codes.json` | `error_codes_version` 1.3 (a `hint_hu` opcionális teendő-szöveg) |
+| Hibakódok | `contracts/error-codes.json` | `error_codes_version` 1.4 (a `hint_hu` opcionális teendő-szöveg) |
 | Rust FFI | `src/rust/validator/include/tes_validator.h` | ABI 1 |
-| Sandbox-marker | `.tes-sandbox.json` (`TiaStudio.Contracts.SandboxMarker`) | `marker_version` 1.0 |
+| Sandbox-marker | `.tes-sandbox.json` (`TiaStudio.Contracts.SandboxMarker`) | `marker_version` 1.1 (kötelező `sandbox_id`; 1.0-s markerű sandboxot újra kell létrehozni) |
 
 ## Worker hívása
 
@@ -41,16 +41,17 @@ ismeretlen művelet `OPERATION_NOT_SUPPORTED`.
 | `Saved` | teljes siker, mentve |
 | `Unknown` | időtúllépés, összeomlás, megszakítás vagy mentési hiba – kézi ellenőrzés szükséges |
 
-## ApprovalDigest v1
+## ApprovalDigest v2
 
 SHA-256 (kisbetűs hex) a következő UTF-8 szöveg fölött (`\n` sorvég, minden sor `kulcs=érték`):
 
 ```text
-tes-approval-v1
+tes-approval-v2
 job_id=<job_id>
 operation=ImportAndCompile
 tia_version=V19
 project_path=<Path.GetFullPath, Windows alatt nagybetűsítve, záró elválasztó nélkül>
+sandbox_id=<a projekt mappájában lévő .tes-sandbox.json sandbox_id-ja>
 plc_name=PLC_1
 overwrite_policy=Deny
 manifest_sha256=<a manifest.json bájtjainak hash-e>
@@ -58,7 +59,15 @@ file=<import_order>:<relative_path>:<sha256>      (import_order szerint, fájlon
 ```
 
 Sortörést tartalmazó mező elutasítva. A digest a jóváhagyáskor új `job_id`-hoz készül, így egy
-jóváhagyás egyetlen futtatási kérelemre érvényes. A worker a hash-eket maga méri újra.
+jóváhagyás egyetlen futtatási kérelemre érvényes. A worker a hash-eket maga méri újra, és a
+`sandbox_id`-t maga olvassa a markerből: ha a jóváhagyás után ugyanarra az útvonalra új sandbox-másolat
+került, a jóváhagyás érvénytelen (`APPROVAL_INVALID`). A v1-hez képest új: `sandbox_id` sor.
+
+Ismert korlát: a digest a sandbox-másolat *azonosságát* köti, a TIA-projekt *tartalmát* nem. Hogy a
+TIA Portal mentés nélküli megnyitáskor módosítja-e a projektmappa fájljait, csak valódi TIA-val
+igazolható; addig a tartalmi védelem az import előtt a workerben újra lefutó teljes rekurzív
+ütközésvizsgálat (`BLOCK_COLLISION`) és a jóváhagyó szabály: a sandboxot a jóváhagyás után kézzel
+nem szabad megnyitni.
 
 ## Manifest 1.1 (könyvtárimport)
 

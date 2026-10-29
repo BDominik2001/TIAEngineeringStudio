@@ -37,6 +37,23 @@ Kiadott verzió még nincs. Az első tag (`v0.1.0`) csak akkor készül, ha a
 
 ### Javítva
 
+- Kódaudit (2026-10-29) javításai, *TIA: all*:
+  - Az offline-ellenőrzés fail-closed: csak a kifejezett `OnlineState.Offline` engedi az importot/exportot;
+    hiányzó `OnlineProvider` vagy nem egyértelmű állapot új `PLC_ONLINE_STATE_UNKNOWN` hiba (eddig offline-nak számított).
+  - A worker a projektben talált CPU családját (`TypeIdentifier` rendelési száma) összeveti a manifest
+    `cpu_family`-jével; eltérés vagy fel nem ismerhető CPU: új `CPU_FAMILY_MISMATCH` (hibakatalógus 1.4).
+  - A TIA nélkül fordított („unlinked”) worker a felületen `Unavailable`; a `configure-workers.ps1` nem
+    állítja át (config-írással sem lenne használható), a worker mellé `.openness.json` link-jelölő kerül.
+  - A TIA-integrációs tesztszkript kihagyott teszteknél nem jelez sikert (TRX-ellenőrzés: `passed | failed | not-run`);
+    új teszt a hibás CPU-családra; `-CpuFamily` / `TES_TIA_CPU_FAMILY_Vxx`.
+  - A jóváhagyás a sandbox-másolat azonosítójához is kötött (ApprovalDigest v2, sandbox-marker 1.1 `sandbox_id`;
+    a régi markerű sandboxot újra kell létrehozni).
+  - A sandbox útvonalán és a projektmappában junction/symlink tiltva; linkelt fájlból nem készül sandbox.
+  - Időtúllépés/megszakítás a worker teljes folyamatfáját (a TIA Portal-példányt is) leállítja (Windows Job Object),
+    a maradék folyamatról figyelmeztetés szól.
+  - Atomi JSON-írás (`File.Replace`, lemezre ürítve): a `library.json` csere közben sem hiányzik.
+  - A forráskód-előnézet olvasási hibája vagy a manifesttől eltérő tartalma nem jelöli a fájlt átnézettnek.
+  - A `simaticml_import` és `simaticml_block_import` képesség hatóköre dokumentálva.
 - Kiadás: az előzetes-kiadás tagek (`v0.2.0-beta.1`) eddig elbuktak a verzióellenőrzésen; a tag alapverziója
   egyezik a `Directory.Build.props`-szal, a csomag és a build a teljes tag-verziót viseli.
 - Kiadás: stabil kiadáshoz mindhárom TIA-verzió integrációs tesztje kötelező (eddig kihagyható volt);

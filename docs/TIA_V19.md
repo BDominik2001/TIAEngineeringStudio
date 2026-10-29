@@ -14,7 +14,10 @@ A Siemens V19 dokumentációja (11/2023) szerint a V18-as Openness DLL-re épül
 
 V19-specifikus API-t csak ebben a projektben (`src/tia-adapters/v19`) szabad bevezetni, `TiaCapabilities.Features` jelző mögött; hiányzó képesség explicit `Unsupported`.
 
-V19-ben/V20-ban exportált SimaticML **nem** minősül V18-kompatibilisnek; a SimaticML import/export (`simaticml_import`) az MVP-ben ki van kapcsolva.
+V19-ben/V20-ban exportált SimaticML **nem** minősül V18-kompatibilisnek. Az általános SimaticML-import
+(`simaticml_import`: generált csomag, hardver- és változótábla-objektumok, más verzióból származó XML) az MVP-ben
+ki van kapcsolva; a `simaticml_block_import` csak a blokk-könyvtár ugyanazon TIA-verzióban exportált egyedi
+blokkjainak/UDT-inek felülírás nélküli importja.
 
 ## Build és beállítás
 

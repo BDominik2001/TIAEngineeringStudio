@@ -37,7 +37,9 @@ A Siemens DLL-ek egyik csomagban sincsenek.
 | Előzetes (`-alpha/-beta/-rc`) | ajánlott; teszt nélkül is készülhet | tesztelt: „Supported & tested”; nem tesztelt: **„Untested development build”** – nem nevezhető Openness-kompatibilisnek, a release notes figyelmeztetéssel kezdődik |
 | bármely | sikertelen teszt | a kiadás megáll |
 
-A sikeres fordítás önmagában soha nem „tested”. Lefutott teszt esetén a `release-manifest.json`
+A sikeres fordítás önmagában soha nem „tested”, és a kihagyott (Skipped) teszt sem: a
+`scripts/test-tia-integration.ps1` a TRX alapján csak akkor ad `passed` eredményt, ha legalább
+négy TIA-teszt ténylegesen lefutott, mind sikeres, és egy sem maradt ki. Lefutott teszt esetén a `release-manifest.json`
 csomagonként rögzíti a tesztkörnyezetet (`testEnvironment`): Windows-verzió, a használt
 `Siemens.Engineering.dll` útvonala, fájl- és termékverziója (TIA Update), a mintaprojekt neve és SHA-256-ja,
 a tesztelt commit és a runner neve; a release notes is felsorolja. Tesztelés kizárólag engedélyezett,
@@ -54,7 +56,9 @@ runneren** futnak, soha nem Pull Requestből:
    a `release` csak `v*` tagekre engedélyezve.
 3. Settings → Variables: `TES_TIA_KNOWN_GOOD_PROJECT_V18|V19|V20` – ismert jó, üres PLC-t tartalmazó
    demó/sandbox projekt útvonala a runneren (`.ap18/.ap19/.ap20`). Az eredeti nem módosul, a teszt
-   friss sandbox-másolaton fut. Ügyfélprojekt nem használható.
+   friss sandbox-másolaton fut. Ügyfélprojekt nem használható. Opcionálisan `TES_TIA_CPU_FAMILY_V18|V19|V20`
+   (`S7-1200` | `S7-1500`): a mintaprojekt PLC-jének CPU-családja, ha eltér az `examples/machine-vXX.json`
+   értékétől (a worker a CPU-családot a projektben ténylegesen talált hardverrel veti össze).
 4. Settings → Actions → General: „Require approval for all outside collaborators”; self-hosted runner
    publikus repón nem használható.
 

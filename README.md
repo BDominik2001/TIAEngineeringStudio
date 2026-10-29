@@ -104,8 +104,18 @@ licenc, és a felhasználó a `Siemens TIA Openness` helyi csoport tagja.
 ```
 
 A workerek a build-gépen a registryből megtalált `Siemens.Engineering.dll`-re hivatkoznak (a DLL-t
-nem másoljuk). Ha egy verzió nincs telepítve, az adott worker „unlinked" módban épül, és minden
-TIA-műveletet `WORKER_BUILT_WITHOUT_OPENNESS` hibával utasít el. Másik gépre telepítés után:
+nem másoljuk). Ha egy verzió nincs telepítve, az adott worker „unlinked" módban épül: az Openness-kód
+**nincs benne**, minden TIA-műveletet `WORKER_BUILT_WITHOUT_OPENNESS` hibával utasít el, és a felület
+„Unavailable” állapotúnak mutatja. Ilyen workert utólag semmilyen konfiguráció nem tesz használhatóvá;
+a TIA-t futtató gépen újra kell fordítani:
+
+```powershell
+.\scripts\build-tia-workers.ps1 -Versions V18 -RequireOpenness
+```
+
+A worker mellett lévő `TiaStudio.TiaAdapter.Vxx.openness.json` mutatja, hogy Openness-szel fordult-e.
+Egy **Openness-szel fordított** workert egy másik, azonos TIA-verziót futtató gépre áthelyezve csak a
+DLL-útvonalat kell átállítani (az unlinked workereket a szkript figyelmeztetéssel kihagyja):
 
 ```powershell
 .\scripts\configure-workers.ps1 -WorkersRoot .\dist\TiaEngineeringStudio\workers

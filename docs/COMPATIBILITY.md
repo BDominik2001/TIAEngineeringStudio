@@ -39,6 +39,9 @@ Jelmagyarázat: ✅ igazolt (dátum, gép, TIA Update a naplóban) · ⏳ nem fu
 | API DLL helyes betöltése | ⏳ | ⏳ | ⏳ | `MatrixForConfiguredVersion` (GetCapabilities) |
 | Üres sandbox projekt megnyitása | ⏳ | ⏳ | ⏳ | `MatrixForConfiguredVersion` (dry run) |
 | Választott PLC felismerése | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `UnknownPlcIsRejected`, dry run |
+| CPU-család egyezése / eltérés elutasítása | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `CpuFamilyMustMatchTheManifest`, `WrongCpuFamilyIsRejected` |
+| Online / ismeretlen online állapot elutasítása | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `OnlinePlcIsRejected`, `UndeterminableOnlineStateIsRejected` |
+| Időtúllépés: worker + TIA Portal leállítása | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `TimeoutTerminatesTheWholeProcessTreeOnWindows` (ping.exe gyerekfolyamattal); valódi TIA-val kézi |
 | SCL külső forrás importálása | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `SuccessfulImportCompilesAndSaves`, `MatrixForConfiguredVersion` |
 | Generált blokk fordítása | ⏳ | ⏳ | ⏳ | `MatrixForConfiguredVersion` |
 | Projektnév/blokkütközés elutasítása | ⏳ 🧪 | ⏳ 🧪 | ⏳ 🧪 | `NestedGroupCollisionBlocksImport`, `MatrixForConfiguredVersion` |
@@ -72,7 +75,8 @@ Jelmagyarázat: 📘 a kézikönyv megerősíti · 🔧 a kézikönyv alapján j
 | 5 | A megnyitandó projekt nem lehet nyitva másik TIA-példányban; csak olvasható projekt nem érhető el | 5.3.1 (112. o.) | 🔧 új hibakód: `PROJECT_OPEN_FAILED` (eddig tévesen `PROJECT_NOT_FOUND`) |
 | 6 | Eszközök: `Project.Devices`, `DeviceGroups` (rekurzív), `UngroupedDevicesGroup.Devices` | 5.9.7 (309. o.) | 📘 |
 | 7 | `PlcSoftware.Name` vs. CPU `DeviceItem.Name` – melyik egyezik a gépmodell `plc_name`-jével | – | ⏳ (mindkettőt elfogadjuk; többértelműségnél `PLC_NOT_FOUND`) |
-| 8 | Online állapot: `DeviceItem.GetService<OnlineProvider>().State`, `OnlineState.Offline` | 5.11.2.5 (384–385. o.) | 📘 |
+| 8 | Online állapot: `DeviceItem.GetService<OnlineProvider>().State`, `OnlineState.Offline` | 5.11.2.5 (384–385. o.) | 📘 + 🔧 fail-closed: hiányzó `OnlineProvider` vagy `Incompatible`/`NotReachable`/`Protected` = nem offline (`PLC_ONLINE_STATE_UNKNOWN`) |
+| 8a | CPU-család: `DeviceItem.TypeIdentifier` = `OrderNumber:<rendelési szám>[/<FW>]`; 6ES7 21x = S7-1200, 6ES7 51x = S7-1500 | 5.9 (299–300. o.), 5.11.15.3 | 🔧 a manifest `cpu_family`-jével összevetve (`CPU_FAMILY_MISMATCH`); a rendelésiszám-szabály ⏳ valódi projekttel igazolandó |
 | 9 | Fordítás: `GetService<ICompilable>().Compile()`, rekurzív `CompilerResult.Messages`; minden eszköz offline; jelszavas safety programnál bejelentkezés nélkül kivétel | 5.3 (137–138. o.) | 📘 – a hibaüzenet utal a safety-jelszóra |
 | 10 | Blokkcsoportok: `BlockGroup.Blocks`, `BlockGroup.Groups` (`PlcBlockUserGroup`, rekurzív); rendszerblokkok: `SystemBlockGroups` → `PlcSystemBlockGroup.Groups` (szintén `PlcSystemBlockGroup`) | 5.11.3.1–5.11.3.4 (432–435. o.) | 🔧 a bejárás konkrét csoporttípusokra írva (a rendszercsoportok nem `PlcBlockUserGroup`-ok) |
 | 11 | Adattípusok: `TypeGroup.Types`, `TypeGroup.Groups` (`PlcTypeUserGroup`) | 5.11.3, 6.4.1.27 | 🔧 a nem dokumentált `SystemTypeGroups` bejárása törölve |
@@ -92,6 +96,23 @@ Jelmagyarázat: 📘 a kézikönyv megerősíti · 🔧 a kézikönyv alapján j
 | 25 | `GenerateSource` ír-e UTF-8 BOM-ot, és ékezetmentes forrásnál ASCII-kompatibilis-e (a BOM megengedett) | 5.11.3.18 („UTF-8", a példakód szerint „ASCII text") | ⏳ |
 
 A ⏳ pontokat az első valódi V18 futás (`scripts/test-tia-integration.ps1 -Version V18`) igazolja; az eredményt ide és az alábbi táblázatba kell rögzíteni.
+
+## Nyitott bizonyítékok (kódaudit 2026-10-29)
+
+A kódszintű megállapítások javítva (A-02 … A-09, A-11, A-12). Kódjavítással nem zárható le, valódi
+TIA-val bizonyítandó:
+
+- **A-01 – valódi Openness-integráció:** V18, V19 és V20 alatt (dokumentált TIA Update, CPU, firmware)
+  a `scripts/test-tia-integration.ps1` mind a négy tesztje lefut, **0 kihagyással** (a szkript ezt a
+  TRX-ből ellenőrzi; kihagyott teszt = `not-run`, a kiadási kapu megáll), majd kézi PLC-objektum-ellenőrzés.
+- **A-10 – a generált SCL Siemens-fordíthatósága:** 3 TIA-verzió × 2 CPU-család (S7-1200, S7-1500)
+  legalább 6 igazolt fordítás (`-CpuFamily`, `TES_TIA_CPU_FAMILY_Vxx`); a golden-SCL teszt csak
+  bájtszintű regresszió, nem fordítási bizonyíték. A generált `FC_Cylinders`-t a felhasználónak
+  ciklikus OB-ból (pl. OB1) kell hívnia, különben a diagnosztika nem fut.
+- **A-05 – projekttartalom:** módosítja-e a TIA a projektmappát mentés nélküli megnyitáskor (ettől függ,
+  köthető-e a jóváhagyás a projektfájlok hash-éhez is; lásd API_CONTRACTS.md, ApprovalDigest v2).
+- **A-07 – TIA-folyamatfa:** a TIA Portal-példány a worker Job Objectjébe kerül-e (gyerekfolyamatként
+  indul-e), és időtúllépéskor valóban leáll-e.
 
 ## API-eltérések nyilvántartása
 
