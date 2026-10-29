@@ -166,6 +166,7 @@
                                 <TextBlock Text="PROJEKT" Style="{StaticResource ActionHeader}" />
                                 <Button Style="{StaticResource ActionLink}" Content="Új gépmodell" Command="{Binding NewProjectCommand}" />
                                 <Button Style="{StaticResource ActionLink}" Content="Gépmodell megnyitása…" Command="{Binding OpenProjectCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Mintamodell betöltése" Command="{Binding OpenSampleCommand}" ToolTip="A kiválasztott TIA-célverzió mintamodellje (két munkahenger)" />
                                 <Button Style="{StaticResource ActionLink}" Content="Gépmodell mentése…" Command="{Binding SaveProjectCommand}" />
                                 <TextBlock Text="ESZKÖZÖK" Style="{StaticResource ActionHeader}" />
                                 <Button Style="{StaticResource ActionLink}" Content="Blokk-könyvtárak" Command="{Binding NavigateCommand}" CommandParameter="5" />
@@ -310,6 +311,7 @@
                                 <TextBlock Text="GÉPMODELL" Style="{StaticResource ActionHeader}" />
                                 <Button Style="{StaticResource ActionLink}" Content="Új gépmodell" Command="{Binding NewProjectCommand}" />
                                 <Button Style="{StaticResource ActionLink}" Content="Megnyitás…" Command="{Binding OpenProjectCommand}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Mintamodell betöltése" Command="{Binding OpenSampleCommand}" ToolTip="A kiválasztott TIA-célverzió mintamodellje (két munkahenger)" />
                                 <Button Style="{StaticResource ActionLink}" Content="Mentés…" Command="{Binding SaveProjectCommand}" />
                                 <TextBlock Text="ESZKÖZÖK" Style="{StaticResource ActionHeader}" />
                                 <Button Style="{StaticResource ActionLink}" Content="Munkahenger hozzáadása" Command="{Binding AddCylinderCommand}" />
@@ -388,6 +390,7 @@
                                 <Button Style="{StaticResource ActionLink}" Content="{Binding GenerateLabel}" Command="{Binding GenerateCommand}" />
                                 <Button Style="{StaticResource ActionLink}" Content="Újrakezdés (vázlat)" Command="{Binding ResetCommand}" />
                                 <TextBlock Text="TOVÁBB" Style="{StaticResource ActionHeader}" />
+                                <Button Style="{StaticResource ActionLink}" Content="Vissza a gépmodellhez" Command="{Binding NavigateCommand}" CommandParameter="1" />
                                 <Button Style="{StaticResource ActionLink}" Content="Előnézet &amp; jóváhagyás" Command="{Binding NavigateCommand}" CommandParameter="3" />
                             </StackPanel>
                         </ContentControl>
@@ -719,8 +722,33 @@
                                 <TextBlock Text="Műveleti napló" Style="{StaticResource PageTitle}" />
                                 <Border Style="{StaticResource PageHeaderLine}" />
                             </DockPanel>
-                            <HeaderedContentControl Style="{StaticResource Card}" Header="Események (ebben a munkamenetben)" Margin="0">
-                                <ListBox ItemsSource="{Binding AuditLines}" FontFamily="Consolas" FontSize="11.5" BorderThickness="0" Background="Transparent" />
+                            <HeaderedContentControl Style="{StaticResource Card}" Header="Események (ebben a munkamenetben, a legújabb felül; részletek: vidd az egeret a sorra)" Margin="0">
+                                <DataGrid ItemsSource="{Binding AuditEntries}" IsReadOnly="True" BorderThickness="0" Background="Transparent">
+                                    <DataGrid.RowStyle>
+                                        <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                            <Setter Property="ToolTip" Value="{Binding Raw}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsError}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource Brush.Danger}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.RowStyle>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Idő" Width="70" Binding="{Binding Time}" />
+                                        <DataGridTextColumn Header="Esemény" Width="170" Binding="{Binding Event}" />
+                                        <DataGridTextColumn Header="Állapot" Width="120" Binding="{Binding State}" />
+                                        <DataGridTextColumn Header="TIA" Width="50" Binding="{Binding TiaVersion}" />
+                                        <DataGridTextColumn Header="Hibakód" Width="190" Binding="{Binding ErrorCode}" />
+                                        <DataGridTextColumn Header="Üzenet" Width="*" Binding="{Binding Message}">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
                             </HeaderedContentControl>
                         </DockPanel>
                     </DockPanel>
