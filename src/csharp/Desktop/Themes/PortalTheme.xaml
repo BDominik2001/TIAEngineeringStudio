@@ -349,7 +349,6 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="WindowState" Value="Maximized">
-                            <Setter TargetName="Root" Property="Margin" Value="7" />
                             <Setter TargetName="Root" Property="BorderThickness" Value="0" />
                             <Setter TargetName="MaxButton" Property="Visibility" Value="Collapsed" />
                             <Setter TargetName="RestoreButton" Property="Visibility" Value="Visible" />
