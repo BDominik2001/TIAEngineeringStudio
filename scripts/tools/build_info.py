@@ -5,6 +5,7 @@
 A külön nyilvántartott verziókat a forrásukból olvassa (nincs kézzel másolt érték):
 
   appVersion             Directory.Build.props <Version> (SemVer)
+  releaseVersion         --release-version (kiadásnál a tag teljes verziója, pl. 0.2.0-beta.1), különben = appVersion
   gitCommitSha           GITHUB_SHA vagy `git rev-parse HEAD` (+ gitDirty)
   buildTimestampUtc      SOURCE_DATE_EPOCH, ha meg van adva; különben a jelenlegi idő
   targetTiaVersion       --tia (worker-csomag); a közös Desktop-buildnél null
@@ -105,18 +106,23 @@ def lockfile_hash() -> str:
     return combined.hexdigest()
 
 
-def build_info(tia: str | None) -> dict:
+def build_info(tia: str | None, release_version: str | None = None) -> dict:
+    """release_version: a kiadási tag teljes verziója (pl. 0.2.0-beta.1); alapverziója az appVersion."""
+    release_version = release_version or app_version()
+    if release_version != app_version() and not release_version.startswith(app_version() + "-"):
+        raise SystemExit(f"build_info: release version {release_version} does not extend app version {app_version()}")
     sha, dirty = git_state()
     adapter = None
     if tia:
         csproj = _read(f"src/tia-adapters/{tia.lower()}/TiaStudio.TiaAdapter.{tia}.csproj")
         adapter = {
-            "workerVersion": app_version(),
+            "workerVersion": release_version,
             "opennessAssemblyVersion": _match(r"<TiaAssemblyVersion>([^<]+)</TiaAssemblyVersion>", csproj, "TiaAssemblyVersion"),
         }
     template = template_catalog()
     return {
         "appVersion": app_version(),
+        "releaseVersion": release_version,
         "gitCommitSha": sha,
         "gitDirty": dirty,
         "buildTimestampUtc": timestamp(),
@@ -144,6 +150,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--tia", choices=TIA_VERSIONS)
     parser.add_argument("--output")
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--release-version", help="a kiadási tag teljes verziója (pl. 0.2.0-beta.1)")
     args = parser.parse_args(argv)
     if args.check:
         versions = component_versions()
@@ -152,7 +159,7 @@ def main(argv: list[str]) -> int:
             return 1
         print("app version consistent: " + app_version())
         return 0
-    text = json.dumps(build_info(args.tia), indent=2) + "\n"
+    text = json.dumps(build_info(args.tia, args.release_version), indent=2) + "\n"
     if args.output:
         Path(args.output).write_text(text, encoding="utf-8")
     else:

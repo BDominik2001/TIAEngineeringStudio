@@ -12,7 +12,9 @@ param(
     [string[]]$Versions = @('V18', 'V19', 'V20'),
     [string]$Configuration = 'Release',
     [string]$OutputRoot = (Join-Path $PSScriptRoot '..\dist\TiaEngineeringStudio\workers'),
-    [switch]$RequireOpenness
+    [switch]$RequireOpenness,
+    # Kiadásnál a tag teljes verziója (pl. 0.2.0-beta.1) -> AssemblyInformationalVersion
+    [string]$Version
 )
 . "$PSScriptRoot\_common.ps1"
 
@@ -22,6 +24,7 @@ foreach ($version in $Versions) {
     $project = Join-Path $RepoRoot "src\tia-adapters\$($version.ToLowerInvariant())\TiaStudio.TiaAdapter.$version.csproj"
     $output = Join-Path $OutputRoot $version
     $arguments = @('build', $project, '-c', $Configuration, '-o', $output)
+    if ($Version) { $arguments += "-p:Version=$Version" }
     if ($dll) {
         Write-Step "$version worker – Openness: $dll"
         $arguments += "-p:TiaApiPath=$(Split-Path $dll -Parent)"
